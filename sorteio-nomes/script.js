@@ -11,8 +11,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const nomesArray = nomesTexto.split('\n').map(nome => nome.trim()).filter(nome => nome !== '');
 
             if (nomesArray.length > 0) {
-                const indiceSorteado = Math.floor(Math.random() * nomesArray.length);
-                nomeSorteadoDisplay.textContent = nomesArray[indiceSorteado];
+                const useCountdown = document.getElementById('countdownCheckbox').checked;
+                const countdownSeconds = parseInt(document.getElementById('countdownSeconds').value) || 3;
+
+                if (useCountdown && countdownSeconds > 0) {
+                    sortearNomeBtn.disabled = true;
+                    let counter = countdownSeconds;
+
+                    nomeSorteadoDisplay.textContent = counter;
+                    // Adicionar classe global ou style inline se não tivermos a classe importada
+                    // Como estamos usando styles separados, é melhor adicionar ao css global ou garantir que este tenha acesso
+                    // Vou assumir que o styles.css global terá a animação ou que vamos adicionar em breve
+
+                    const interval = setInterval(() => {
+                        counter--;
+                        if (counter > 0) {
+                            nomeSorteadoDisplay.textContent = counter;
+                        } else {
+                            clearInterval(interval);
+                            const indiceSorteado = Math.floor(Math.random() * nomesArray.length);
+                            nomeSorteadoDisplay.textContent = nomesArray[indiceSorteado];
+                            sortearNomeBtn.disabled = false;
+                        }
+                    }, 1000);
+                } else {
+                    const indiceSorteado = Math.floor(Math.random() * nomesArray.length);
+                    nomeSorteadoDisplay.textContent = nomesArray[indiceSorteado];
+                }
             } else {
                 nomeSorteadoDisplay.textContent = 'Por favor, insira nomes para sortear.';
             }

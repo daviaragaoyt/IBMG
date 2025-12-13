@@ -1,154 +1,73 @@
-/* sorteio_numeros/styles.css (ESPECÍFICO PARA NÚMEROS) */
-
-/* Cores específicas (se necessário sobrepor as globais) */
-:root {
-    --primary-color: #000;
-  
-    --text-dark: #333;
-    --background-light: #ffffff;
-    --background-dark: #002f32;
-    --border-color: #ddd;
-}
-
-/* Estilos para a main da página de números */
-main.sort-page.numero-page {
-    background-color: var(--background-dark); /* Fundo claro */
-    color: var(--text-dark); /* Texto escuro */
-    justify-content: flex-start; /* Alinha ao topo */
-}
-
-main.numero-page p {
-    color: var(--text-dark);
-}
-
-.sorteio-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 600px;
-    margin-top: 20px;
-    padding: 30px;
-    background-color: var(--background-light);
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.sorteio-container .instrucao {
-    font-size: 1.5em;
-    font-weight: 400;
-    margin-bottom: 20px;
-    color: var(--text-dark);
-}
-
-.sorteio-container .instrucao .destaque {
-    font-weight: 700;
-    color: var(--accent-color-number);
-}
-
 .inputs-numeros {
     display: flex;
+    flex-direction: column;
+    /* COLUNA */
     align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
     justify-content: center;
+    margin-bottom: 30px;
+    gap: 15px;
+    width: 100%;
 }
 
 .inputs-numeros .label-entre,
 .inputs-numeros .label-e {
-    font-size: 1.2em;
-    margin: 0 10px;
-    color: var(--text-dark);
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 5px 0;
+    /* Espaçamento vertical entre textos */
 }
 
+/* Inputs mais largos para ficarem bonitos na coluna */
 .input-numero {
-    width: 80px;
-    padding: 15px 10px;
-    font-size: 1.5em;
+    width: 100%;
+    max-width: 200px;
+    /* Largura máxima confortável */
+    height: 60px;
+    font-size: 1.8rem;
     text-align: center;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-dark);
-    background-color: var(--background-light);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--glass-border);
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+body.light-mode .input-numero {
+    background: #ffffff;
+    border-color: #cbd5e1;
 }
 
 .input-numero:focus {
-    outline: none;
-    border-color: var(--accent-color-number);
-   
-}
-
-.btn-sortear-numero {
-    background-color: var(--background-dark);
-    color: white;
-    padding: 20px 40px;
-    font-size: 1.8em;
-    font-weight: 700;
-    border: none;
-    border-radius: 10px;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    margin-top: 20px;
-    width: auto;
-    cursor: pointer;
-}
-
-.btn-sortear-numero:hover {
-    transform: translateY(-3px);
+    border-color: var(--accent-color);
 }
 
 .resultado-label {
-    font-size: 1.3em;
-    margin-top: 30px;
+    font-size: 1.2rem;
+    margin-top: 20px;
     margin-bottom: 10px;
     font-weight: 500;
-    color: var(--text-dark);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 #numeroSorteado {
-    font-size: 3.5em;
-    color: var(--accent-color-number);
-    font-weight: 700;
-    letter-spacing: 2px;
-    margin-bottom: 20px;
+    font-size: 5rem;
+    color: var(--accent-color);
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin-bottom: 15px;
     display: block;
+    text-shadow: 0 0 30px rgba(233, 233, 233, 0.3);
+    line-height: 1;
 }
 
 .info-extra {
     font-size: 0.9em;
-    color: #666;
-    margin-top: 15px;
-}
-
-/* Responsividade específica para a página de números */
-@media (max-width: 768px) {
-    main.sort-page.numero-page {
-        margin: 30px 15px;
-        padding: 25px;
-    }
-    main.sort-page.numero-page h1 {
-        font-size: 2.2em;
-    }
-    .sorteio-container {
-        padding: 20px;
-    }
-    .inputs-numeros {
-        flex-direction: column;
-    }
-    .inputs-numeros .label-entre,
-    .inputs-numeros .label-e {
-        margin: 10px 0;
-    }
-    .input-numero {
-        width: 100px;
-        margin-bottom: 10px;
-    }
-    .btn-sortear-numero {
-        padding: 15px 30px;
-        font-size: 1.5em;
-        width: 100%;
-    }
-    #numeroSorteado {
-        font-size: 2.8em;
-    }
+    color: var(--text-secondary);
+    opacity: 0.7;
+    margin-top: 3px;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 15px;
 }

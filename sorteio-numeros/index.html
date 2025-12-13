@@ -22,6 +22,8 @@
                 <li><a href="../index.html">Início</a></li>
                 <li><a href="../sorteio-nomes/index.html">Sortear Nome</a></li>
                 <li><a href="index.html">Sortear Número</a></li>
+                <li><a href="../bingo/index.html">Bingo</a></li>
+                <li><button id="themeToggleBtn" title="Mudar Tema">☀</button></li>
             </ul>
         </nav>
     </header>
@@ -39,11 +41,19 @@
             </div>
 
             <button id="sortearNumeroBtn" class="btn-sortear-numero">SORTEAR AGORA!</button>
+            <br />
+            <div class="config-countdown-container" style="margin-top: 20px;">
+                <label class="countdown-label">
+                    <input type="checkbox" id="countdownCheckbox"> Contagem Regressiva
+                </label>
+                <label class="countdown-label">
+                    Tempo (s): <input type="number" id="countdownSeconds" value="3" min="1" max="60"
+                        class="input-countdown">
+                </label>
+            </div>
 
             <p class="resultado-label">Número Sorteado:</p>
             <strong id="numeroSorteado">?</strong>
-
-            <p class="info-extra">Sorteador de números aleatórios gratuito!</p>
         </div>
     </main>
 
@@ -52,6 +62,7 @@
     </footer>
 
     <script src="script.js"></script>
+    <script src="../assets/js/theme.js"></script>
 </body>
 
 </html>

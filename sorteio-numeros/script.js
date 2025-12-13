@@ -21,9 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const numeroSorteado = Math.floor(Math.random() * (maxNumero - minNumero + 1)) + minNumero;
+            const useCountdown = document.getElementById('countdownCheckbox').checked;
+            const countdownSeconds = parseInt(document.getElementById('countdownSeconds').value) || 3;
 
-            numeroSorteadoDisplay.textContent = numeroSorteado;
+            if (useCountdown && countdownSeconds > 0) {
+                sortearNumeroBtn.disabled = true;
+                let counter = countdownSeconds;
+
+                numeroSorteadoDisplay.textContent = counter;
+                numeroSorteadoDisplay.classList.add('countdown-active');
+
+                const interval = setInterval(() => {
+                    counter--;
+                    if (counter > 0) {
+                        numeroSorteadoDisplay.textContent = counter;
+                    } else {
+                        clearInterval(interval);
+                        numeroSorteadoDisplay.classList.remove('countdown-active');
+                        const numeroSorteado = Math.floor(Math.random() * (maxNumero - minNumero + 1)) + minNumero;
+                        numeroSorteadoDisplay.textContent = numeroSorteado;
+                        sortearNumeroBtn.disabled = false;
+                    }
+                }, 1000);
+            } else {
+                const numeroSorteado = Math.floor(Math.random() * (maxNumero - minNumero + 1)) + minNumero;
+                numeroSorteadoDisplay.textContent = numeroSorteado;
+            }
         });
     }
 });

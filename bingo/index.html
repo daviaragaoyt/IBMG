@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sortear Nome - Sorteador IBMG</title>
+    <title>Bingo - Sorteador IBMG</title>
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="styles.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Playfair+Display:wght@400;700&display=swap"
         rel="stylesheet">
+
     <link rel="icon" type="image/png" href="../assets/logo.png">
 </head>
 
@@ -19,20 +20,24 @@
             <img src="../assets/nome.png" alt="Logo Sorteador IBMG" class="logo">
             <ul>
                 <li><a href="../index.html">Início</a></li>
-                <li><a href="index.html">Sortear Nome</a></li>
+                <li><a href="../sorteio-nomes/index.html">Sortear Nome</a></li>
                 <li><a href="../sorteio-numeros/index.html">Sortear Número</a></li>
-                <li><a href="../bingo/index.html">Bingo</a></li>
+                <li><a href="index.html">Bingo</a></li>
                 <li><button id="themeToggleBtn" title="Mudar Tema">☀</button></li>
             </ul>
         </nav>
     </header>
 
-    <main class="sort-page nome-page">
-        <div class="sorteio-container card-glass">
-            <h1>Sortear Nomes</h1>
-            <textarea id="nomesInput" rows="10"
-                placeholder="Ex:&#10;João&#10;Maria&#10;Pedro&#10;Ana&#10;Carlos"></textarea>
-            <div class="config-countdown-container" style="margin-top: 20px; text-align: center;">
+    <main class="sort-page bingo-page">
+        <div class="sorteio-container">
+            <p class="instrucao">Bingo IBGM</p>
+
+            <div class="numero-atual-container">
+                <p class="resultado-label">Número Sorteado:</p>
+                <strong id="numeroSorteado">?</strong>
+            </div>
+
+            <div class="config-countdown-container">
                 <label class="countdown-label">
                     <input type="checkbox" id="countdownCheckbox"> Contagem Regressiva
                 </label>
@@ -42,8 +47,15 @@
                 </label>
             </div>
 
-            <button id="sortearNomeBtn">Sortear Nome</button>
-            <p>Nome Sorteado: <strong id="nomeSorteado"></strong></p>
+            <button id="sortearBingoBtn" class="btn-sortear-bingo">SORTRA NÚMERO</button>
+            <button id="reiniciarBingoBtn" class="btn-reiniciar">Reiniciar Jogo</button>
+
+            <div class="historico-container">
+                <span class="historico-label">Histórico de Números</span>
+                <div id="historicoGrid" class="historico-grid">
+                    <!-- Bolinhas entrarão aqui -->
+                </div>
+            </div>
         </div>
     </main>
 

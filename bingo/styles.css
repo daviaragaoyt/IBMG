@@ -1,0 +1,160 @@
+/* bingo/styles.css (PADRONIZADO E LAYOUT COLUNA) */
+
+/* Global container override for Bingo if needed, but styling internal elements is better */
+
+/* Ensure internal elements stack beautifully */
+.sorteio-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Centraliza horizontalmente */
+    justify-content: center;
+}
+
+/* Container do Número Atual */
+.numero-atual-container {
+    text-align: center;
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    transition: background 0.3s, border-color 0.3s;
+    width: 100%;
+    /* Garante largura total dentro do container */
+    max-width: 400px;
+    /* Limita largura para não ficar gigante */
+}
+
+body.light-mode .numero-atual-container {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.resultado-label {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+#numeroSorteado {
+    font-size: 6rem;
+    color: var(--accent-color);
+    /* Padronizado com global */
+    font-weight: 800;
+    line-height: 1;
+    display: block;
+    text-shadow: 0 0 40px rgba(0, 123, 156, 0.4);
+    /* Padrão azul global */
+}
+
+body.light-mode #numeroSorteado {
+    text-shadow: 0 0 20px rgba(0, 123, 156, 0.2);
+}
+
+/* Botão Reiniciar */
+.btn-reiniciar {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--text-secondary);
+    padding: 10px 20px;
+    margin-top: 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 250px;
+}
+
+.btn-reiniciar:hover {
+    background: rgba(125, 125, 125, 0.1);
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+.btn-sortear-bingo {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 10px;
+}
+
+/* Histórico */
+.historico-container {
+    width: 100%;
+    margin-top: 40px;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 25px;
+}
+
+.historico-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 20px;
+    text-align: center;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.historico-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.bola-historico {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Ajuste das bolas no modo claro para não ficarem "invisíveis" se o gradiente for muito claro */
+body.light-mode .bola-historico {
+    background: linear-gradient(135deg, #ffffff, #e2e8f0);
+    border-color: #cbd5e1;
+    color: var(--accent-color);
+}
+
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.countdown-active {
+    color: var(--accent-color) !important;
+}
+
+@media (max-width: 768px) {
+    #numeroSorteado {
+        font-size: 5rem;
+    }
+
+    .bola-historico {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+    }
+}
