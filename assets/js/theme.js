@@ -24,6 +24,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Hamburger Menu Logic
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navUl = document.querySelector('nav ul');
+
+    if (menuToggle && navUl) {
+        menuToggle.addEventListener('click', () => {
+            navUl.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+        });
+
+        // Fechar menu ao clicar em um link (melhor UX)
+        const navLinks = navUl.querySelectorAll('a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navUl.classList.remove('active');
+                menuToggle.classList.remove('active');
+            });
+        });
+    }
+
     function updateBtnIcon(isLight) {
         if (themeToggleBtn) {
             themeToggleBtn.textContent = isLight ? '☾' : '☀';
