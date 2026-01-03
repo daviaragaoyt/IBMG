@@ -1,0 +1,431 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- SEU CSS ORIGINAL --- */
+
+:root {
+  /* Paleta de Cores */
+  --bg-gradient-start: #001A42;
+  --bg-gradient-end: #000000;
+  --primary-color: #001A42;
+  --accent-color: #007B9C;
+  --accent-hover: #005f7a;
+  --text-primary: #E9E9E9;
+  --text-secondary: #cccccc;
+  --glass-bg: rgba(0, 47, 67, 0.75);
+  --glass-border: rgba(233, 233, 233, 0.1);
+  --input-bg: rgba(32, 32, 32, 0.6);
+  --container-max-width: 1200px;
+  --header-height: 70px;
+}
+
+/* Light Mode */
+body.light-mode {
+  --bg-gradient-start: #E9E9E9;
+  --bg-gradient-end: #ffffff;
+  --text-primary: #202020;
+  --text-secondary: #4a5568;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 26, 66, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.9);
+}
+
+body {
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-primary);
+  min-height: 100vh;
+  /* Removemos display: flex daqui para deixar o App.tsx controlar */
+  overflow-x: hidden;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Transição global suave para elementos principais */
+.glass-panel,
+.page-title,
+.btn-custom,
+input,
+textarea,
+button,
+.numero-atual-container,
+.bola-historico,
+.config-countdown-container,
+.input-countdown {
+  transition: background-color 0.5s ease,
+    border-color 0.5s ease,
+    color 0.5s ease,
+    box-shadow 0.5s ease,
+    transform 0.2s ease;
+}
+
+/* --- ESTILOS GLOBAIS DE COMPONENTES --- */
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .glass-panel {
+  box-shadow: 0 20px 40px -10px rgba(0, 26, 66, 0.15);
+}
+
+/* Botões Estilo Original */
+.page-title {
+  color: #E9E9E9;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .page-title {
+  color: var(--primary-color);
+  border-bottom-color: rgba(0, 26, 66, 0.1);
+}
+
+.btn-custom {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 50px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  box-shadow: 0 4px 15px rgba(233, 233, 233, 0.4);
+}
+
+.btn-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(233, 233, 233, 0.5);
+  filter: brightness(1.1);
+}
+
+.btn-custom:disabled {
+  background: #475569;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  filter: grayscale(0.5);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+.bingo-page .sorteio-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Container do Número Atual */
+.numero-atual-container {
+  text-align: center;
+  margin: 30px 0;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  transition: background 0.3s, border-color 0.3s;
+  width: 100%;
+  max-width: 400px;
+}
+
+body.light-mode .numero-atual-container {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.resultado-label {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.numero-grande {
+  font-size: 6rem;
+  color: var(--accent-color);
+  font-weight: 800;
+  line-height: 1;
+  display: block;
+  text-shadow: 0 0 40px rgba(0, 123, 156, 0.4);
+}
+
+body.light-mode .numero-grande {
+  text-shadow: 0 0 20px rgba(0, 123, 156, 0.2);
+}
+
+/* Botão Reiniciar */
+.btn-reiniciar {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--text-secondary);
+  padding: 10px 20px;
+  margin-top: 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 250px;
+}
+
+.btn-reiniciar:hover {
+  background: rgba(125, 125, 125, 0.1);
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.btn-sortear-bingo {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 10px;
+}
+
+/* Histórico */
+.historico-container {
+  width: 100%;
+  margin-top: 40px;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 25px;
+}
+
+.historico-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 20px;
+  text-align: center;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.historico-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.bola-historico {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+body.light-mode .bola-historico {
+  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  border-color: #cbd5e1;
+  color: var(--accent-color);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Configuração de Countdown */
+.config-countdown-container {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 12px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 20px 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode .config-countdown-container {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.countdown-label {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.input-countdown {
+  width: 70px;
+  padding: 6px 10px;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: #E9E9E9;
+  font-weight: bold;
+}
+
+body.light-mode .input-countdown {
+  background: #fff;
+  color: #202020;
+  border-color: #ccc;
+}
+
+/* --- ESTILOS DO SORTEIO DE NOMES --- */
+
+.textarea-nomes {
+  width: 100%;
+  margin-bottom: 20px;
+  resize: vertical;
+  min-height: 150px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 15px;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+body.light-mode .textarea-nomes {
+  background: rgba(255, 255, 255, 0.9);
+  color: #202020;
+  border-color: #ccc;
+}
+
+.textarea-nomes:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 156, 0.2);
+}
+
+.nome-sorteado {
+  font-size: 2.5rem;
+  color: var(--accent-color);
+  font-weight: 800;
+  display: block;
+  margin-top: 10px;
+  text-shadow: 0 0 20px rgba(233, 233, 233, 0.3);
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+body.light-mode .nome-sorteado {
+  text-shadow: 0 0 10px rgba(0, 123, 156, 0.2);
+}
+
+@media (max-width: 768px) {
+  .nome-sorteado {
+    font-size: 2rem;
+  }
+}
+
+/* --- ESTILOS DO SORTEIO DE NÚMEROS --- */
+
+.inputs-numeros {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+  gap: 15px;
+  width: 100%;
+}
+
+.inputs-numeros .label-entre,
+.inputs-numeros .label-e {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 5px 0;
+}
+
+/* Inputs largos */
+.input-numero {
+  width: 100%;
+  max-width: 200px;
+  height: 60px;
+  font-size: 1.8rem;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--glass-border);
+  color: var(--accent-color);
+  font-weight: bold;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+body.light-mode .input-numero {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.input-numero:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 156, 0.2);
+}
+
+.resultado-label {
+  font-size: 1.2rem;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.numero-sorteado-display {
+  font-size: 5rem;
+  color: var(--accent-color);
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin-bottom: 15px;
+  display: block;
+  text-shadow: 0 0 30px rgba(233, 233, 233, 0.3);
+  line-height: 1;
+}
+
+body.light-mode .numero-sorteado-display {
+  text-shadow: 0 0 15px rgba(0, 123, 156, 0.2);
+}
