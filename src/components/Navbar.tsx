@@ -49,12 +49,9 @@ export const Navbar = ({ isLightMode, toggleTheme }: NavbarProps) => {
         `}>
                     <li><Link to="/" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/')}`}>Início</Link></li>
                     <li><Link to="/sorteio-nomes" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/sorteio-nomes')}`}>Sortear Nome</Link></li>
-                    <li><Link to="/sorteio-numeros" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/bingo')}`}>Sortear Número</Link></li>
+                    <li><Link to="/sorteio-numeros" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/sorteio-numeros')}`}>Sortear Número</Link></li>
                     <li><Link to="/bingo" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/bingo')}`}>Bingo</Link></li>
-
-                    {/* Novo Link do Evento */}
-                    <li><Link to="/credencial" onClick={closeMenu} className={`text-lg md:text-base transition-colors ${isActive('/credencial')}`}>Ekklesia</Link></li>
-
+                    <li><Link to="/ekklesia" onClick={closeMenu} className="bg-gradient-to-r from-[#e94a49] to-[#c95e89] text-white px-4 py-2 rounded-full font-bold hover:shadow-lg transition-all transform hover:scale-105">Ekklesia 2026</Link></li>
                     {/* Botão de Tema */}
                     <li>
                         <button
