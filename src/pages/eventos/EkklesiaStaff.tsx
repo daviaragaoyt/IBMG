@@ -229,7 +229,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
             {/* TABS FLUTUANTES */}
             <div className="px-6 -mt-8 relative z-30">
-                <div className="flex bg-white rounded-2xl shadow-xl p-1.5 justify-between border" style={{ borderColor: theme.borderColor }}>
+                <div className="flex rounded-2xl shadow-xl p-1.5 justify-between border" style={{ background: theme.cardBg, borderColor: theme.borderColor }}>
                     {[
                         { id: 'COUNTER', icon: <MousePointerClick size={18} />, label: 'Contador' },
                         { id: 'SCAN', icon: <QrCode size={18} />, label: 'Scanner' },
