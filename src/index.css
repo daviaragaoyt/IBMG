@@ -429,3 +429,34 @@ body.light-mode .input-numero {
 body.light-mode .numero-sorteado-display {
   text-shadow: 0 0 15px rgba(0, 123, 156, 0.2);
 }
+
+/* --- TOAST ANIMATIONS --- */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight 0.4s ease-in forwards;
+}

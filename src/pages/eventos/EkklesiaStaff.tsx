@@ -1,24 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import {
-    CheckCircle, AlertTriangle, XCircle, QrCode, UserPlus,
-    MapPin, ArrowLeft, Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock
+    CheckCircle2, XCircle, QrCode, UserPlus, MapPin, ArrowLeft,
+    Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// --- TEMA (Visual Premium) ---
+// --- TEMA ---
 const getTheme = (isLightMode: boolean) => ({
     gradient: 'linear-gradient(135deg, #A800E0, #FF3D00)',
-    bg: isLightMode ? '#FFFFFF' : '#0F0014',
+    bg: isLightMode ? '#F3F4F6' : '#0F0014', // Fundo mais clean
     cardBg: isLightMode ? '#FFFFFF' : '#1A0524',
     textPrimary: isLightMode ? '#1A1A1A' : '#FFFFFF',
     textSecondary: isLightMode ? '#666666' : '#AAAAAA',
-    borderColor: isLightMode ? '#F3F4F6' : '#2D0A3D',
-    inputBg: isLightMode ? '#F9FAFB' : '#2D0A3D',
-    inputBorder: isLightMode ? '#E5E7EB' : '#4B1E63',
-    tabActive: isLightMode ? '#A800E0' : '#FFFFFF',
-    tabInactive: isLightMode ? '#9CA3AF' : '#6B7280',
+    borderColor: isLightMode ? '#E5E7EB' : '#2D0A3D',
+    activeBorder: '#A800E0',
 });
+
+// --- COMPONENTE TOAST (NOTIFICAÇÃO ELEGANTE) ---
+const Toast = ({ msg, type, onClose }: { msg: string, type: 'success' | 'error', onClose: () => void }) => {
+    const [isExiting, setIsExiting] = useState(false);
+
+    useEffect(() => {
+        // Inicia a saída um pouco antes do tempo total (3000ms)
+        const exitTimer = setTimeout(() => setIsExiting(true), 2600);
+        // Remove o componente do DOM após a animação de saída terminar
+        const closeTimer = setTimeout(onClose, 3000);
+
+        return () => {
+            clearTimeout(exitTimer);
+            clearTimeout(closeTimer);
+        };
+    }, [onClose]);
+
+    return (
+        <div className={`fixed top-24 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl backdrop-blur-md border-l-4 transition-all
+            ${isExiting ? 'animate-slide-out-right' : 'animate-slide-in-right'}
+            ${type === 'success' ? 'bg-white/90 border-green-500 text-gray-800' : 'bg-white/90 border-red-500 text-gray-800'}`}>
+            {type === 'success' ? <CheckCircle2 className="text-green-500" size={24} /> : <XCircle className="text-red-500" size={24} />}
+            <div>
+                <h4 className="font-bold text-sm uppercase tracking-wider">{type === 'success' ? 'Sucesso' : 'Erro'}</h4>
+                <p className="font-medium text-sm text-gray-600">{msg}</p>
+            </div>
+        </div>
+    );
+};
 
 // --- LOGIN ---
 const StaffLogin = ({ onLogin, isLightMode }: { onLogin: (user: any) => void, isLightMode: boolean }) => {
@@ -45,26 +71,23 @@ const StaffLogin = ({ onLogin, isLightMode }: { onLogin: (user: any) => void, is
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden font-sans transition-colors duration-500" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-20 blur-[120px] pointer-events-none" style={{ background: theme.gradient }}></div>
-            <div className="w-full max-w-sm p-8 rounded-[2rem] shadow-2xl relative z-10 animate-fade-in border" style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg" style={{ background: theme.gradient }}><Lock size={32} /></div>
-                <h2 className="text-3xl font-black text-center mb-2 tracking-tight">Staff Access</h2>
-                <form onSubmit={handleLogin} className="space-y-4 mt-8">
-                    <input type="email" required placeholder="Seu e-mail cadastrado" className="w-full p-4 rounded-xl border-2 outline-none font-medium transition-all focus:border-[#A800E0]" style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }} value={email} onChange={e => setEmail(e.target.value)} />
-                    <button disabled={loading} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:brightness-110 transition-all transform hover:-translate-y-1 disabled:opacity-50" style={{ background: theme.gradient }}>{loading ? 'Verificando...' : 'ENTRAR'}</button>
+        <div className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden font-sans" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
+            <div className="w-full max-w-sm p-8 rounded-[2rem] shadow-xl relative z-10 border bg-white/5 backdrop-blur-sm" style={{ borderColor: theme.borderColor }}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-lg" style={{ background: theme.gradient }}><Lock size={28} /></div>
+                <h2 className="text-2xl font-black text-center mb-6 tracking-tight">Staff Access</h2>
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <input type="email" required placeholder="Seu e-mail" className="w-full p-4 rounded-xl border outline-none font-medium focus:border-purple-500 transition-all bg-transparent" style={{ borderColor: theme.borderColor }} value={email} onChange={e => setEmail(e.target.value)} />
+                    <button disabled={loading} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:opacity-90 transition-all" style={{ background: theme.gradient }}>{loading ? 'Entrando...' : 'ACESSAR'}</button>
                 </form>
-                {error && <div className="mt-4 p-4 bg-red-500/10 text-red-500 rounded-xl text-center font-bold text-sm border border-red-500/20">{error}</div>}
-                <Link to="/ekklesia" className="block text-center mt-6 text-sm hover:underline opacity-50 hover:opacity-100 transition-opacity">Voltar para Home</Link>
+                {error && <p className="mt-4 text-red-500 text-center text-sm font-bold">{error}</p>}
+                <Link to="/ekklesia" className="block text-center mt-6 text-xs opacity-50 hover:opacity-100">Voltar</Link>
             </div>
         </div>
     );
 };
 
 // --- PAINEL PRINCIPAL ---
-interface EventoProps { isLightMode: boolean; }
-
-export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
+export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [staffUser, setStaffUser] = useState<any>(() => {
         const saved = localStorage.getItem('ekklesia_staff_user');
         return saved ? JSON.parse(saved) : null;
@@ -74,16 +97,17 @@ export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
     const [checkpoints, setCheckpoints] = useState<any[]>([]);
     const [churches, setChurches] = useState<string[]>([]);
 
-    // Seleções
+    // -- ESTADOS DE COLETA DE DADOS --
     const [selectedSpot, setSelectedSpot] = useState('');
     const [selectedChurch, setSelectedChurch] = useState('Ibmg Sede');
     const [selectedAgeGroup, setSelectedAgeGroup] = useState('ADULTO');
+    const [selectedGender, setSelectedGender] = useState('M'); // NOVO: Gênero
 
-    // Estados
-    const [feedback, setFeedback] = useState<any>(null);
+    // -- UI States --
+    const [toasts, setToasts] = useState<any[]>([]); // Sistema de Toasts
     const [pauseScan, setPauseScan] = useState(false);
 
-    // Cadastro
+    // -- Cadastro --
     const [regName, setRegName] = useState('');
     const [regType, setRegType] = useState('VISITOR');
     const [regAge, setRegAge] = useState('');
@@ -99,15 +123,24 @@ export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
         }
     }, [staffUser]);
 
+    const addToast = (msg: string, type: 'success' | 'error') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, msg, type }]);
+        if (navigator.vibrate) navigator.vibrate(50);
+    };
+
+    const removeToast = (id: number) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
     const handleLogout = () => {
         setStaffUser(null);
         localStorage.removeItem('ekklesia_staff_user');
     };
 
-    // 1. CONTADOR
+    // 1. CONTADOR MANUAL (AGORA COM GÊNERO)
     const handleCount = async (type: 'MEMBER' | 'VISITOR') => {
-        if (!selectedSpot) return alert("⚠️ Selecione a ÁREA primeiro!");
-        if (navigator.vibrate) navigator.vibrate(50);
+        if (!selectedSpot) return addToast("Selecione o Local primeiro!", 'error');
 
         try {
             const res = await fetch(`${API_URL}/count`, {
@@ -118,22 +151,22 @@ export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
                     type,
                     church: selectedChurch,
                     ageGroup: selectedAgeGroup,
+                    gender: selectedGender, // <--- Enviando Gênero
                     quantity: 1
                 })
             });
 
             if (res.ok) {
-                const id = Date.now();
+                const genderLabel = selectedGender === 'M' ? 'Homem' : 'Mulher';
                 const ageLabel = selectedAgeGroup === 'CRIANCA' ? 'Criança' : selectedAgeGroup === 'JOVEM' ? 'Jovem' : 'Adulto';
-                setFeedback({ id, msg: `+1 ${ageLabel} ${type === 'MEMBER' ? 'Membro' : 'Visitante'}`, status: 'SUCCESS' });
-                setTimeout(() => setFeedback(null), 1500);
+                addToast(`+1 ${genderLabel} ${ageLabel} (${type === 'MEMBER' ? 'Membro' : 'Visitante'})`, 'success');
             }
-        } catch (error) { alert("Erro de conexão."); }
+        } catch (error) { addToast("Erro de conexão.", 'error'); }
     };
 
     // 2. SCANNER
     const handleTrack = async (id: string) => {
-        if (!selectedSpot) return alert("⚠️ Selecione a ÁREA na aba Contador antes de bipar!");
+        if (!selectedSpot) return addToast("Selecione o Local antes de bipar!", 'error');
         setPauseScan(true);
         try {
             const res = await fetch(`${API_URL}/track`, {
@@ -142,34 +175,29 @@ export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
                 body: JSON.stringify({ personId: id, checkpointId: selectedSpot })
             });
             const data = await res.json();
-            setFeedback({ msg: data.message, status: data.status });
-        } catch (err) { setFeedback({ msg: "Erro de conexão", status: "ERROR" }); }
-        setTimeout(() => { setFeedback(null); setPauseScan(false); }, 2500);
+            addToast(data.message, data.status === 'SUCCESS' ? 'success' : 'error');
+        } catch (err) { addToast("Erro de conexão", 'error'); }
+        setTimeout(() => { setPauseScan(false); }, 2500);
     };
 
     // 3. CADASTRO
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedSpot) return alert("Selecione a área primeiro.");
+        if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
         setLoadingReg(true);
         try {
             const res = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: regName,
-                    type: regType,
-                    church: selectedChurch,
-                    age: regAge
-                })
+                body: JSON.stringify({ name: regName, type: regType, church: selectedChurch, age: regAge })
             });
             if (res.ok) {
                 const newUser = await res.json();
                 await handleTrack(newUser.id);
-                setRegName(''); setRegType('VISITOR'); setRegAge('');
-                alert("✅ Cadastro realizado!");
+                setRegName(''); setRegAge('');
+                addToast("Cadastro realizado com sucesso!", 'success');
             }
-        } catch (e) { alert("Erro ao cadastrar"); }
+        } catch (e) { addToast("Erro ao cadastrar", 'error'); }
         finally { setLoadingReg(false); }
     };
 
@@ -178,154 +206,162 @@ export const EkklesiaStaff = ({ isLightMode }: EventoProps) => {
     return (
         <div className="min-h-screen w-full font-sans flex flex-col transition-colors duration-500" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
 
-            {/* HEADER */}
-            <div className="px-6 py-6 pb-12 shadow-2xl rounded-b-[2.5rem] relative z-20 flex justify-between items-start" style={{ background: theme.gradient }}>
-                <div className="flex items-center gap-3">
-                    <Link to="/ekklesia" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-all text-white"><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 className="text-white font-black text-xl tracking-tight leading-none">STAFF AREA</h1>
-                        <p className="text-white/80 text-xs mt-1 font-medium">Olá, {staffUser.name.split(' ')[0]}</p>
+            {/* TOAST CONTAINER */}
+            <div className="fixed top-0 right-0 p-4 z-50 flex flex-col gap-2 pointer-events-none">
+                {toasts.map(t => (
+                    <div key={t.id} className="pointer-events-auto">
+                        <Toast msg={t.msg} type={t.type} onClose={() => removeToast(t.id)} />
                     </div>
-                </div>
-                <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full hover:bg-white/30 text-white transition-all"><LogOut size={20} /></button>
+                ))}
             </div>
 
-            {/* MENU TABS */}
+            {/* HEADER FIXO */}
+            <div className="px-6 py-6 pb-12 shadow-sm relative z-20 flex justify-between items-start" style={{ background: theme.cardBg }}>
+                <div className="flex items-center gap-3">
+                    <Link to="/ekklesia" className="p-2 rounded-full hover:bg-gray-100 transition-all"><ArrowLeft size={20} /></Link>
+                    <div>
+                        <h1 className="font-black text-xl tracking-tight leading-none">STAFF AREA</h1>
+                        <p className="text-xs opacity-60 mt-1 font-medium">Logado como {staffUser.name.split(' ')[0]}</p>
+                    </div>
+                </div>
+                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-red-50 text-red-500 transition-all"><LogOut size={20} /></button>
+            </div>
+
+            {/* TABS FLUTUANTES */}
             <div className="px-6 -mt-8 relative z-30">
-                <div className="flex bg-white rounded-2xl shadow-xl p-2 justify-between" style={{ backgroundColor: theme.cardBg }}>
+                <div className="flex bg-white rounded-2xl shadow-xl p-1.5 justify-between border" style={{ borderColor: theme.borderColor }}>
                     {[
-                        { id: 'COUNTER', icon: <MousePointerClick size={20} />, label: 'Contador' },
-                        { id: 'SCAN', icon: <QrCode size={20} />, label: 'Scanner' },
-                        { id: 'REGISTER', icon: <UserPlus size={20} />, label: 'Cadastro' }
+                        { id: 'COUNTER', icon: <MousePointerClick size={18} />, label: 'Contador' },
+                        { id: 'SCAN', icon: <QrCode size={18} />, label: 'Scanner' },
+                        { id: 'REGISTER', icon: <UserPlus size={18} />, label: 'Novo' }
                     ].map((tab) => (
                         <button key={tab.id} onClick={() => setMode(tab.id as any)}
-                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center gap-1 transition-all ${mode === tab.id ? 'bg-gray-100' : 'opacity-50 hover:opacity-80'}`}
-                            style={{ color: mode === tab.id ? theme.tabActive : theme.tabInactive, backgroundColor: mode === tab.id ? (isLightMode ? '#F3F4F6' : '#2D0A3D') : 'transparent' }}>
+                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all
+                    ${mode === tab.id ? 'shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-50'}`}
+                            style={{
+                                color: mode === tab.id ? 'white' : theme.textPrimary,
+                                background: mode === tab.id ? theme.gradient : 'transparent'
+                            }}>
                             {tab.icon} {tab.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* CONTEÚDO */}
-            <div className="flex-1 p-6 overflow-y-auto pb-24">
+            <div className="flex-1 p-6 overflow-y-auto pb-24 max-w-lg mx-auto w-full">
 
-                {/* === ABA CONTADOR === */}
+                {/* === ABA CONTADOR (REDESENHADA) === */}
                 {mode === 'COUNTER' && (
-                    <div className="flex flex-col gap-5 animate-fade-in max-w-md mx-auto">
-                        {/* Seletores estilizados */}
-                        <div className="rounded-3xl border shadow-sm overflow-hidden" style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
+                    <div className="flex flex-col gap-5 animate-fade-in">
+
+                        {/* 1. SELETORES GERAIS */}
+                        <div className="grid grid-cols-1 gap-3">
                             <div className="relative">
-                                <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50" />
-                                <select
-                                    className="w-full p-4 pl-12 bg-transparent font-bold text-lg outline-none appearance-none"
-                                    value={selectedSpot}
-                                    onChange={e => setSelectedSpot(e.target.value)}
-                                    style={{ color: theme.textPrimary }}
-                                >
-                                    <option value="" className="text-gray-900 bg-white">📍 Selecione o Local...</option>
-                                    {checkpoints.map((cp: any) => (
-                                        <option key={cp.id} value={cp.id} className="text-gray-900 bg-white">{cp.name}</option>
+                                <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
+                                <select className="w-full p-4 pl-12 rounded-xl border bg-white font-bold outline-none appearance-none shadow-sm text-gray-800"
+                                    value={selectedSpot} onChange={e => setSelectedSpot(e.target.value)}>
+                                    <option value="">Selecione o Local...</option>
+                                    {checkpoints.map((cp: any) => (<option key={cp.id} value={cp.id}>{cp.name}</option>))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} />
+                            </div>
+                            <div className="relative">
+                                <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
+                                <select className="w-full p-4 pl-12 rounded-xl border bg-white font-bold outline-none appearance-none shadow-sm text-gray-800"
+                                    value={selectedChurch} onChange={e => setSelectedChurch(e.target.value)}>
+                                    {churches.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+
+                        <hr className="border-gray-200/50" />
+
+                        {/* 2. DADOS ESPECÍFICOS (GÊNERO E IDADE) */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Gênero */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase opacity-50 ml-1">Gênero</label>
+                                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                                    {['M', 'F'].map(g => (
+                                        <button key={g} onClick={() => setSelectedGender(g)}
+                                            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${selectedGender === g ? 'bg-white shadow text-black' : 'text-gray-400'}`}>
+                                            {g === 'M' ? 'HOMEM' : 'MULHER'}
+                                        </button>
                                     ))}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
+                                </div>
                             </div>
-
-                            <div className="h-[1px] w-full bg-gray-200/20"></div>
-
-                            <div className="relative">
-                                <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50" />
-                                <select
-                                    className="w-full p-4 pl-12 bg-transparent font-bold text-lg outline-none appearance-none"
-                                    value={selectedChurch}
-                                    onChange={e => setSelectedChurch(e.target.value)}
-                                    style={{ color: theme.textPrimary }}
-                                >
-                                    {churches.length > 0 ?
-                                        churches.map(c => <option key={c} value={c} className="text-gray-900 bg-white">{c}</option>) :
-                                        <option value="Ibmg Sede" className="text-gray-900 bg-white">Ibmg Sede</option>
-                                    }
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
+                            {/* Idade */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase opacity-50 ml-1">Faixa Etária</label>
+                                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                                    {[
+                                        { id: 'CRIANCA', icon: <Baby size={16} /> },
+                                        { id: 'JOVEM', icon: <User size={16} /> },
+                                        { id: 'ADULTO', icon: <UserCheck size={16} /> }
+                                    ].map(a => (
+                                        <button key={a.id} onClick={() => setSelectedAgeGroup(a.id)}
+                                            className={`flex-1 py-2 rounded-lg flex items-center justify-center transition-all ${selectedAgeGroup === a.id ? 'bg-white shadow text-black' : 'text-gray-400'}`}>
+                                            {a.icon}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Faixa Etária */}
-                        <div className="grid grid-cols-3 gap-2">
-                            {['CRIANCA', 'JOVEM', 'ADULTO'].map(age => (
-                                <button key={age} onClick={() => setSelectedAgeGroup(age)}
-                                    className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider border-2 transition-all shadow-sm
-                            ${selectedAgeGroup === age ? 'border-[#A800E0] bg-[#A800E0] text-white scale-105' : 'border-gray-200/50 opacity-60'}`}
-                                    style={{ borderColor: selectedAgeGroup !== age ? theme.borderColor : undefined }}>
-                                    {age === 'CRIANCA' ? 'Criança' : age === 'JOVEM' ? 'Jovem' : 'Adulto'}
-                                </button>
-                            ))}
+                        {/* 3. BOTÕES DE AÇÃO (GRANDES) */}
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                            <button onClick={() => handleCount('VISITOR')} disabled={!selectedSpot}
+                                className="group h-32 rounded-[2rem] shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 disabled:opacity-50 relative overflow-hidden bg-white border border-gray-100">
+                                <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 opacity-10 group-hover:opacity-20 transition-opacity"></div>
+                                <Plus size={32} className="text-orange-500 mb-2" />
+                                <span className="text-2xl font-black text-gray-800">VISITANTE</span>
+                                <span className="text-[10px] font-bold text-orange-500 uppercase mt-1 tracking-widest">
+                                    {selectedGender === 'M' ? 'Homem' : 'Mulher'} • {selectedAgeGroup}
+                                </span>
+                            </button>
+
+                            <button onClick={() => handleCount('MEMBER')} disabled={!selectedSpot}
+                                className="group h-32 rounded-[2rem] shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 disabled:opacity-50 relative overflow-hidden bg-white border border-gray-100">
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-indigo-500 opacity-10 group-hover:opacity-20 transition-opacity"></div>
+                                <CheckCircle2 size={32} className="text-purple-600 mb-2" />
+                                <span className="text-2xl font-black text-gray-800">MEMBRO</span>
+                                <span className="text-[10px] font-bold text-purple-600 uppercase mt-1 tracking-widest">
+                                    {selectedGender === 'M' ? 'Homem' : 'Mulher'} • {selectedAgeGroup}
+                                </span>
+                            </button>
                         </div>
-
-                        {/* Botões de Ação */}
-                        {selectedSpot ? (
-                            <div className="grid grid-cols-1 gap-4 mt-2">
-                                <button onClick={() => handleCount('VISITOR')}
-                                    className="group h-36 rounded-[2.5rem] shadow-xl flex flex-col items-center justify-center transition-all active:scale-95 hover:brightness-110 relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-[#FF9966] to-[#FF5E62]"></div>
-                                    <div className="relative z-10 flex flex-col items-center">
-                                        <Plus size={48} className="text-white mb-1 drop-shadow-md" />
-                                        <span className="text-4xl font-black text-white drop-shadow-md tracking-tight">VISITANTE</span>
-                                        <span className="text-white/90 text-[10px] mt-2 font-bold bg-black/10 px-4 py-1 rounded-full uppercase">
-                                            {selectedAgeGroup === 'CRIANCA' ? 'Criança' : selectedAgeGroup === 'JOVEM' ? 'Jovem' : 'Adulto'} • {selectedChurch}
-                                        </span>
-                                    </div>
-                                </button>
-
-                                <button onClick={() => handleCount('MEMBER')}
-                                    className="group h-24 rounded-[2.5rem] shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:brightness-105 border-2"
-                                    style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
-                                    <span className="text-2xl font-black" style={{ color: theme.textPrimary }}>MEMBRO</span>
-                                    <span className="text-xs opacity-50 mt-1 font-medium">Registro de {selectedAgeGroup === 'CRIANCA' ? 'Criança' : selectedAgeGroup === 'JOVEM' ? 'Jovem' : 'Adulto'}</span>
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="text-center p-8 opacity-40 border-2 border-dashed rounded-[2rem]" style={{ borderColor: theme.borderColor }}>
-                                <AlertTriangle className="mx-auto mb-2" size={32} />
-                                <p className="font-medium">Selecione o Local para liberar.</p>
-                            </div>
-                        )}
                     </div>
                 )}
 
                 {/* === ABA SCANNER === */}
                 {mode === 'SCAN' && (
-                    <div className="flex flex-col h-full animate-fade-in max-w-md mx-auto items-center justify-center">
-                        {!selectedSpot ? <div className="text-center opacity-50">Selecione o local na aba Contador primeiro</div> :
-                            !pauseScan ? <div className="aspect-square w-full rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-4" style={{ borderColor: theme.tabActive }}><Scanner onScan={(d) => d[0]?.rawValue && handleTrack(d[0].rawValue)} /></div> :
-                                <div className="h-64 w-full rounded-[2.5rem] flex items-center justify-center font-bold bg-white text-black">Processando...</div>}
+                    <div className="flex flex-col h-full animate-fade-in items-center justify-center">
+                        {!selectedSpot ? <div className="text-center opacity-50 font-medium">Selecione o local na aba Contador primeiro</div> :
+                            !pauseScan ? <div className="aspect-square w-full rounded-[2rem] overflow-hidden shadow-2xl bg-black border-4 border-purple-500"><Scanner onScan={(d) => d[0]?.rawValue && handleTrack(d[0].rawValue)} /></div> :
+                                <div className="h-64 w-full rounded-[2rem] flex flex-col items-center justify-center font-bold bg-white text-black shadow-xl">
+                                    <CheckCircle2 size={48} className="text-green-500 mb-4 animate-bounce" />
+                                    Processando...
+                                </div>}
                     </div>
                 )}
 
-                {/* === ABA CADASTRO === */}
+
                 {mode === 'REGISTER' && (
-                    <form onSubmit={handleRegister} className="flex flex-col gap-4 animate-fade-in max-w-md mx-auto p-6 rounded-[2rem] border shadow-sm" style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
-                        <h3 className="font-black text-xl border-b pb-4 mb-2" style={{ borderColor: theme.borderColor }}>Cadastro Completo</h3>
-
-                        <input required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-[#A800E0]" placeholder="Nome Completo" value={regName} onChange={e => setRegName(e.target.value)} style={{ backgroundColor: theme.inputBg, color: theme.textPrimary, borderColor: theme.inputBorder }} />
-                        <input type="number" required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-[#A800E0]" placeholder="Idade (Ex: 25)" value={regAge} onChange={e => setRegAge(e.target.value)} style={{ backgroundColor: theme.inputBg, color: theme.textPrimary, borderColor: theme.inputBorder }} />
-
-                        <div className="grid grid-cols-2 gap-3 mt-2">
-                            <button type="button" onClick={() => setRegType('VISITOR')} className={`p-4 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-[#FF3D00] text-[#FF3D00] bg-[#FF3D00]/10' : 'opacity-50'}`} style={{ borderColor: regType !== 'VISITOR' ? theme.inputBorder : undefined }}>VISITANTE</button>
-                            <button type="button" onClick={() => setRegType('MEMBER')} className={`p-4 rounded-xl font-bold border-2 transition-all ${regType === 'MEMBER' ? 'border-[#A800E0] text-[#A800E0] bg-[#A800E0]/10' : 'opacity-50'}`} style={{ borderColor: regType !== 'MEMBER' ? theme.inputBorder : undefined }}>MEMBRO</button>
+                    <form onSubmit={handleRegister} className="flex flex-col gap-4 animate-fade-in p-6 rounded-[2rem] bg-white shadow-sm border border-gray-100">
+                        <h3 className="font-black text-xl text-gray-800">Novo Cadastro</h3>
+                        <input required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900"
+                            placeholder="Nome Completo" value={regName} onChange={e => setRegName(e.target.value)} />
+                        <input type="number" required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900"
+                            placeholder="Idade (Ex: 25)" value={regAge} onChange={e => setRegAge(e.target.value)} />
+                        <div className="grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setRegType('VISITOR')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-orange-500 text-orange-500 bg-orange-50' : 'border-gray-200 text-gray-400'}`}>VISITANTE</button>
+                            <button type="button" onClick={() => setRegType('MEMBER')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'MEMBER' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400'}`}>MEMBRO</button>
                         </div>
-
-                        <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-5 rounded-xl text-white font-bold text-lg shadow-lg mt-4" style={{ background: theme.gradient }}>{loadingReg ? 'Salvando...' : 'CADASTRAR'}</button>
+                        <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg mt-2 hover:brightness-110" style={{ background: theme.gradient }}>
+                            {loadingReg ? 'Salvando...' : 'CADASTRAR'}
+                        </button>
                     </form>
-                )}
-
-                {/* FEEDBACK */}
-                {feedback && (
-                    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 animate-bounce">
-                        <div className={`px-8 py-5 rounded-[2rem] shadow-2xl text-white font-black text-xl flex items-center gap-3 border-4 ${feedback.status === 'ERROR' ? 'bg-red-500 border-red-300' : 'bg-[#A800E0] border-[#dcb0ff]'}`}>
-                            {feedback.status === 'ERROR' ? <XCircle size={28} /> : <CheckCircle size={28} />} {feedback.msg}
-                        </div>
-                    </div>
                 )}
             </div>
         </div>
