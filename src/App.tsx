@@ -2,19 +2,16 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 
-// Imports Corrigidos para 'eventos' (Plural)
+// Páginas do Evento Ekklesia
 import { HomeEvento } from './pages/eventos/HomeEvento';
 import { EkklesiaStaff } from './pages/eventos/EkklesiaStaff';
 import { EkklesiaCredential } from './pages/eventos/EkklesiaCredential';
 
-// Páginas Ferramentas
+// Páginas das Ferramentas (Sorteios/Bingo)
 import { Home } from './pages/Home';
 import { SorteioNomes } from './pages/ferramentas/SorteioNomes';
 import { SorteioNumeros } from './pages/ferramentas/SorteioNumeros';
 import { Bingo } from './pages/ferramentas/Bingo';
-// Os antigos podem ficar aí se quiser, mas vamos usar os novos do Ekklesia
-import { FindTicketPage } from './pages/eventos/FindTicketPage';
-import { StaffScanner } from './components/StaffScanner';
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -42,33 +39,23 @@ function App() {
 
         <main className="flex-grow w-full flex flex-col items-center">
           <Routes>
-            {/* Rotas Antigas / Ferramentas */}
+            {/* FERRAMENTAS (Centralizadas) */}
             <Route path="/" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><Home isLightMode={isLightMode} /></div>} />
             <Route path="/sorteio-nomes" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><SorteioNomes /></div>} />
             <Route path="/sorteio-numeros" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><SorteioNumeros /></div>} />
             <Route path="/bingo" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><Bingo /></div>} />
 
-            {/* --- ROTAS DO EKKLESIA (Agora passando a prop isLightMode) --- */}
+            {/* EVENTO EKKLESIA (Tela Cheia) */}
             <Route path="/ekklesia" element={<HomeEvento isLightMode={isLightMode} />} />
-
-            <Route path="/ekklesia/admin" element={
-              <div className="w-full"><EkklesiaStaff isLightMode={isLightMode} /></div>
-            } />
-
-            <Route path="/ekklesia/credencial" element={
-              <div className="w-full"><EkklesiaCredential isLightMode={isLightMode} /></div>
-            } />
-            {/* Admin e Credencial novos */}
-            <Route path="/ekklesia/admin" element={<div className="w-full"><EkklesiaStaff isLightMode={isLightMode} /></div>} />
             <Route path="/ekklesia/credencial" element={<div className="w-full"><EkklesiaCredential isLightMode={isLightMode} /></div>} />
 
-            {/* Mantendo as rotas antigas caso precise */}
-            <Route path="/credencial" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><FindTicketPage /></div>} />
-            <Route path="/admin" element={<div className="w-full max-w-[1200px] p-4 pt-10 flex flex-col items-center"><StaffScanner /></div>} />
+            {/* ADMIN STAFF (Protegido por Login no próprio componente) */}
+            <Route path="/ekklesia/admin" element={<div className="w-full"><EkklesiaStaff isLightMode={isLightMode} /></div>} />
           </Routes>
         </main>
       </div>
     </BrowserRouter>
   );
 }
+
 export default App;
