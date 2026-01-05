@@ -7,8 +7,6 @@
     "module": "ESNext",
     "types": ["vite/client"],
     "skipLibCheck": true,
-"noUnusedLocals": false,      // <--- ADICIONE ISSO
-    "noUnusedParameters": false
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
