@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import {
     CheckCircle2, XCircle, QrCode, UserPlus, MapPin, ArrowLeft,
-    Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck
+    Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -217,17 +217,33 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
             {/* HEADER FIXO */}
             <div className="px-6 py-6 pb-12 shadow-sm relative z-20 flex justify-between items-start" style={{ background: theme.cardBg }}>
+
+                {/* Lado Esquerdo: Voltar e Info do Usuário */}
                 <div className="flex items-center gap-3">
                     <Link to="/ekklesia" className="p-2 rounded-full hover:bg-gray-100 transition-all"><ArrowLeft size={20} /></Link>
                     <div>
                         <h1 className="font-black text-xl tracking-tight leading-none">STAFF AREA</h1>
-                        <p className="text-xs opacity-60 mt-1 font-medium">Logado como {staffUser.name.split(' ')[0]}</p>
+                        <p className="text-xs opacity-60 mt-1 font-medium">Olá, {staffUser.name.split(' ')[0]}</p>
                     </div>
                 </div>
-                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-red-50 text-red-500 transition-all"><LogOut size={20} /></button>
+
+                {/* Lado Direito: Botões de Ação */}
+                <div className="flex items-center gap-2">
+
+                    {/* NOVO: BOTÃO DASHBOARD */}
+                    <Link to="/ekklesia/dashboard"
+                        className="p-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-all flex items-center gap-2 shadow-sm border border-purple-100">
+                        <LayoutDashboard size={20} />
+                        <span className="text-xs font-bold hidden sm:block">Dashboard</span>
+                    </Link>
+
+                    {/* BOTÃO LOGOUT (Mantido) */}
+                    <button onClick={handleLogout} className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-sm border border-red-100">
+                        <LogOut size={20} />
+                    </button>
+                </div>
             </div>
 
-            {/* TABS FLUTUANTES */}
             <div className="px-6 -mt-8 relative z-30">
                 <div className="flex rounded-2xl shadow-xl p-1.5 justify-between border" style={{ background: theme.cardBg, borderColor: theme.borderColor }}>
                     {[

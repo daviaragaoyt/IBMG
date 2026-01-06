@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
-
+import { DashboardEvento } from './pages/eventos/DashboardEvento';
 // Páginas do Evento Ekklesia
 import { HomeEvento } from './pages/eventos/HomeEvento';
 import { EkklesiaStaff } from './pages/eventos/EkklesiaStaff';
@@ -12,6 +12,7 @@ import { Home } from './pages/Home';
 import { SorteioNomes } from './pages/ferramentas/SorteioNomes';
 import { SorteioNumeros } from './pages/ferramentas/SorteioNumeros';
 import { Bingo } from './pages/ferramentas/Bingo';
+import { PrivateRoute } from './components/PrivateRoute';
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -48,6 +49,14 @@ function App() {
             {/* EVENTO EKKLESIA (Tela Cheia) */}
             <Route path="/ekklesia" element={<HomeEvento isLightMode={isLightMode} />} />
             <Route path="/ekklesia/credencial" element={<div className="w-full"><EkklesiaCredential isLightMode={isLightMode} /></div>} />
+            <Route
+              path="/ekklesia/dashboard"
+              element={
+                <PrivateRoute>
+                  <DashboardEvento />
+                </PrivateRoute>
+              }
+            />
 
             {/* ADMIN STAFF (Protegido por Login no próprio componente) */}
             <Route path="/ekklesia/admin" element={<div className="w-full"><EkklesiaStaff isLightMode={isLightMode} /></div>} />
