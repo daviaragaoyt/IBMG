@@ -53,7 +53,7 @@ function App() {
               path="/ekklesia/dashboard"
               element={
                 <PrivateRoute>
-                  <DashboardEvento />
+                  <DashboardEvento isLightMode={isLightMode} />
                 </PrivateRoute>
               }
             />
