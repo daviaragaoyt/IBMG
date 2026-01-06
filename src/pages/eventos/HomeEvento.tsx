@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { QrCode, ArrowRight, UserCheck } from 'lucide-react';
 
@@ -15,6 +15,38 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
     };
 
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const mouseRef = useRef<HTMLDivElement>(null);
+    const requestRef = useRef<number>(null);
+    const targetPos = useRef({ x: 0, y: 0 });
+    const currentPos = useRef({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            targetPos.current = { x: e.clientX, y: e.clientY };
+        };
+
+        const animate = () => {
+            // "Diminua a velocidade" -> Fator de interpolação menor (0.05 a 0.1)
+            const ease = 0.08;
+
+            // Lerp (Linear Interpolation) para suavizar o movimento
+            currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
+            currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
+
+            if (mouseRef.current) {
+                mouseRef.current.style.transform = `translate(${currentPos.current.x}px, ${currentPos.current.y}px) translate(-50%, -50%)`;
+            }
+            requestRef.current = requestAnimationFrame(animate);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        requestRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const targetDate = new Date('2026-02-13T00:00:00').getTime();
@@ -41,9 +73,20 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
     }, []);
 
     return (
-        <div className="min-h-screen w-full flex flex-col font-sans transition-colors duration-500" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
-            <div className="relative overflow-hidden w-full flex-1 flex flex-col items-center justify-center text-center px-6 py-20 lg:py-32">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-20 blur-[120px] pointer-events-none" style={{ background: theme.gradient }}></div>
+        <div className="min-h-screen w-full flex flex-col font-sans transition-colors duration-500 overflow-hidden relative" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
+
+            {/* Mouse Flow Effect */}
+            <div
+                ref={mouseRef}
+                className={`fixed top-0 left-0 w-[800px] h-[800px] rounded-full pointer-events-none blur-[100px] z-0 transition-opacity duration-500
+                    ${isLightMode ? 'opacity-30 mix-blend-multiply' : 'opacity-20 mix-blend-screen'}`}
+                style={{ background: theme.gradient }}
+            ></div>
+
+            <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center text-center px-6 py-20 lg:py-32">
+                {/* Removido o blob estático central antigo para dar lugar ao mouse effect, ou podemos mantê-lo mas diminuído se quiser. 
+                    Vou remover para o efeito do mouse ser o destaque principal de luz. */}
+
                 <div className="relative z-10 animate-fade-in space-y-8 max-w-4xl mx-auto">
                     <span className="inline-block py-2 px-4 rounded-full text-sm font-bold tracking-wider uppercase shadow-sm border" style={{ backgroundColor: isLightMode ? 'rgba(168, 0, 224, 0.1)' : 'rgba(255, 255, 255, 0.1)', borderColor: isLightMode ? 'rgba(168, 0, 224, 0.2)' : 'rgba(255, 255, 255, 0.2)', color: isLightMode ? '#A800E0' : '#FFFFFF' }}>Conferência HG 2026</span>
                     <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none" style={{ fontFamily: 'Playfair Display, serif' }}><span className="bg-clip-text text-transparent" style={{ backgroundImage: theme.gradient }}>Ekklesia</span></h1>
@@ -69,7 +112,7 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
                     </div>
                 </div>
             </div>
-            <div className="text-center py-8 text-sm border-t" style={{ color: theme.textSecondary, borderColor: theme.cardBorder }}>© 2026 Evento Ekklesia - IBMG</div>
+            <div className="relative z-10 text-center py-8 text-sm border-t" style={{ color: theme.textSecondary, borderColor: theme.cardBorder }}>© 2026 Evento Ekklesia - IBMG</div>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { ArrowLeft, Search, MapPin, Download, CheckCircle2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,6 +11,10 @@ export const EkklesiaCredential = ({ isLightMode }: EventoProps) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const API_URL = import.meta.env.VITE_API_URL;
+    const mouseRef = useRef<HTMLDivElement>(null);
+    const requestRef = useRef<number>(null);
+    const targetPos = useRef({ x: 0, y: 0 });
+    const currentPos = useRef({ x: 0, y: 0 });
 
     // --- TEMA (Mesmo da Home) ---
     const theme = {
@@ -20,6 +24,30 @@ export const EkklesiaCredential = ({ isLightMode }: EventoProps) => {
         inputBg: isLightMode ? '#F9FAFB' : 'rgba(255,255,255,0.05)',
         inputBorder: isLightMode ? '#E5E7EB' : '#2D0A3D',
     };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            targetPos.current = { x: e.clientX, y: e.clientY };
+        };
+
+        const animate = () => {
+            const ease = 0.08;
+            currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
+            currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
+
+            if (mouseRef.current) {
+                mouseRef.current.style.transform = `translate(${currentPos.current.x}px, ${currentPos.current.y}px) translate(-50%, -50%)`;
+            }
+            requestRef.current = requestAnimationFrame(animate);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        requestRef.current = requestAnimationFrame(animate);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,10 +63,13 @@ export const EkklesiaCredential = ({ isLightMode }: EventoProps) => {
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 font-sans transition-colors duration-500 relative overflow-hidden"
             style={{ backgroundColor: theme.pageBg, color: theme.text }}>
 
-            {/* --- FUNDO DA HOME (BLOB CENTRAL) --- */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-20 blur-[120px] pointer-events-none"
-                style={{ background: theme.brandGradient }}>
-            </div>
+            {/* --- MOUSE FLOW EFFECT --- */}
+            <div
+                ref={mouseRef}
+                className={`fixed top-0 left-0 w-[800px] h-[800px] rounded-full pointer-events-none blur-[100px] z-0 transition-opacity duration-500
+                    ${isLightMode ? 'opacity-30 mix-blend-multiply' : 'opacity-20 mix-blend-screen'}`}
+                style={{ background: theme.brandGradient }}
+            ></div>
 
             {/* --- BOTÃO VOLTAR (CORRIGIDO) --- */}
             {/* Agora com tamanho fixo (w-12 h-12) para garantir que seja uma bolinha */}
