@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// --- TEMA ATUALIZADO ---
 const getTheme = (isLightMode: boolean) => ({
     gradient: 'linear-gradient(135deg, #A800E0, #FF3D00)',
     bg: isLightMode ? '#F3F4F6' : '#0F0014',
@@ -22,23 +23,15 @@ const getTheme = (isLightMode: boolean) => ({
 });
 
 // --- FUNÇÃO DE MÁSCARA PARA CELULAR (BR) ---
-// Transforma 11999998888 em (11) 99999-8888
 const formatPhone = (value: string) => {
     if (!value) return "";
-
-    // 1. Remove tudo que não é número
     let r = value.replace(/\D/g, "");
-
-    // 2. Limita a 11 números
     r = r.slice(0, 11);
-
-    // 3. Aplica a formatação
     if (r.length > 6) {
         r = r.replace(/^(\d\d)(\d{5})(\d{0,4}).*/, "($1) $2-$3");
     } else if (r.length > 2) {
         r = r.replace(/^(\d\d)(\d{0,5})/, "($1) $2");
     }
-
     return r;
 };
 
@@ -125,16 +118,14 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [regType, setRegType] = useState('VISITOR');
     const [regGender, setRegGender] = useState('M');
     const [regChurch, setRegChurch] = useState('Ibmg Sede');
-    const [regSource, setRegSource] = useState(''); // Origem
+    const [regSource, setRegSource] = useState('');
     const [regIsStaff, setRegIsStaff] = useState(false);
     const [loadingReg, setLoadingReg] = useState(false);
 
-    // STATES DE BUSCA MANUAL
+    // STATES DE BUSCA E SANEAMENTO
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
-
-    // STATES DE SANEAMENTO (CLEANUP & SMART CHECKIN)
     const [incompleteList, setIncompleteList] = useState<any[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -156,18 +147,15 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         }
     }, [staffUser]);
 
-    // Carrega pendências quando entra na aba CLEANUP
     useEffect(() => {
         if (mode === 'CLEANUP') fetchIncomplete();
     }, [mode]);
 
-    // Efeito de Busca (Debounce)
     useEffect(() => {
         if (searchTerm.length < 3) {
             setSearchResults([]);
             return;
         }
-
         const timer = setTimeout(async () => {
             setSearching(true);
             try {
@@ -177,7 +165,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
             } catch (e) { console.error(e); }
             finally { setSearching(false); }
         }, 500);
-
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
@@ -193,7 +180,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         localStorage.removeItem('ekklesia_staff_user');
     };
 
-    // --- FUNÇÕES DE SANEAMENTO ---
     const fetchIncomplete = async () => {
         try {
             const res = await fetch(`${API_URL}/people/incomplete`);
@@ -217,7 +203,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     age: editAge,
-                    phone: editPhone, // Envia o telefone formatado mesmo
+                    phone: editPhone,
                     gender: editGender,
                     marketingSource: editSource
                 })
@@ -236,7 +222,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         } catch (e) { addToast("Erro ao salvar", 'error'); }
     };
 
-    // --- 1. CONTADOR MANUAL ---
     const handleCount = async (type: 'MEMBER' | 'VISITOR') => {
         if (!selectedSpot) return addToast("Selecione o Local primeiro!", 'error');
         try {
@@ -252,7 +237,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         } catch (error) { addToast("Erro de conexão.", 'error'); }
     };
 
-    // --- 2. SCANNER INTELIGENTE + BUSCA MANUAL ---
     const handleTrack = async (id: string) => {
         if (!selectedSpot) return addToast("Selecione o Local antes de bipar!", 'error');
         setPauseScan(true);
@@ -267,17 +251,13 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
             if (data.status === 'SUCCESS' || data.status === 'REENTRY') {
                 const p = data.person;
-
-                // === SMART CHECK-IN: Verifica dados faltantes ===
                 if (!p.gender || !p.marketingSource || !p.age) {
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
                     setPersonToUpdate(p);
                     setEditAge(p.age || '');
                     setEditPhone(p.phone || '');
                     setEditGender(p.gender || '');
                     setEditSource(p.marketingSource || '');
-
                     setShowUpdateModal(true);
                 } else {
                     addToast(data.message, 'success');
@@ -371,8 +351,8 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
                                 <select className="w-full p-4 pl-12 rounded-xl border bg-white font-bold outline-none appearance-none shadow-sm text-gray-800"
                                     value={selectedSpot} onChange={e => setSelectedSpot(e.target.value)}>
-                                    <option value="">Selecione o Local...</option>
-                                    {checkpoints.map((cp: any) => (<option key={cp.id} value={cp.id}>{cp.name}</option>))}
+                                    <option value="" className="text-gray-900 bg-white">Selecione o Local...</option>
+                                    {checkpoints.map((cp: any) => (<option key={cp.id} value={cp.id} className="text-gray-900 bg-white">{cp.name}</option>))}
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} />
                             </div>
@@ -380,7 +360,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
                                 <select className="w-full p-4 pl-12 rounded-xl border bg-white font-bold outline-none appearance-none shadow-sm text-gray-800"
                                     value={selectedChurch} onChange={e => setSelectedChurch(e.target.value)}>
-                                    {churches.map(c => <option key={c} value={c}>{c}</option>)}
+                                    {churches.map(c => <option key={c} value={c} className="text-gray-900 bg-white">{c}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} />
                             </div>
@@ -422,7 +402,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 {/* === ABA SCANNER + BUSCA MANUAL === */}
                 {mode === 'SCAN' && (
                     <div className="flex flex-col h-full animate-fade-in">
-
                         {!selectedSpot ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50 font-medium">
                                 <MapPin size={48} className="mb-2" />
@@ -430,7 +409,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">
-                                {/* 1. CÂMERA */}
                                 {searchTerm === '' && (
                                     <div className="relative">
                                         {!pauseScan ? (
@@ -448,22 +426,15 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                     </div>
                                 )}
 
-                                {/* 2. DIVISÓRIA */}
                                 <div className="flex items-center gap-2 opacity-50">
                                     <div className="h-[1px] bg-gray-400 flex-1"></div>
                                     <span className="text-xs font-bold uppercase">Ou busque por nome</span>
                                     <div className="h-[1px] bg-gray-400 flex-1"></div>
                                 </div>
 
-                                {/* 3. BUSCA MANUAL */}
                                 <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Digite o nome da pessoa..."
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full p-4 pl-12 rounded-xl border bg-white font-bold text-gray-800 shadow-sm outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all"
-                                    />
+                                    <input type="text" placeholder="Digite o nome da pessoa..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                                        className="w-full p-4 pl-12 rounded-xl border bg-white font-bold text-gray-800 shadow-sm outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all" />
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                                         {searching ? <RefreshCw size={20} className="animate-spin text-purple-500" /> : <Search size={20} />}
                                     </div>
@@ -474,15 +445,11 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                     )}
                                 </div>
 
-                                {/* 4. RESULTADOS DA BUSCA */}
                                 <div className="flex flex-col gap-2 pb-20">
                                     {searchResults.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => { handleTrack(p.id); setSearchTerm(''); }}
+                                        <button key={p.id} onClick={() => { handleTrack(p.id); setSearchTerm(''); }}
                                             className={`p-4 rounded-xl border shadow-sm flex items-center justify-between transition-all text-left group
-                                            ${p.hasEntered ? 'bg-green-50 border-green-200 opacity-80' : 'bg-white border-gray-100 hover:bg-purple-50'}`}
-                                        >
+                                            ${p.hasEntered ? 'bg-green-50 border-green-200 opacity-80' : 'bg-white border-gray-100 hover:bg-purple-50'}`}>
                                             <div>
                                                 <h4 className="font-bold text-gray-800 flex items-center gap-2">
                                                     {p.name}
@@ -511,7 +478,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                     </div>
                 )}
 
-                {/* === ABA CADASTRO (LAYOUT PREMIUM) === */}
+                {/* === ABA CADASTRO (CORRIGIDA) === */}
                 {mode === 'REGISTER' && (
                     <form onSubmit={handleRegister} className="flex flex-col gap-5 animate-fade-in p-6 rounded-[2rem] shadow-sm border transition-colors duration-500"
                         style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
@@ -523,56 +490,62 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
+                        {/* --- SELETOR DE LOCAL --- */}
+                        <div>
+                            <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-red-500">📍 Onde você está? (Obrigatório)</label>
+                            <div className="relative">
+                                <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" style={{ color: theme.textPrimary }} />
+                                <select className="w-full p-4 pl-12 rounded-2xl border font-bold text-sm outline-none appearance-none transition-all cursor-pointer"
+                                    style={{
+                                        backgroundColor: theme.inputBg,
+                                        borderColor: !selectedSpot ? '#EF4444' : theme.inputBorder,
+                                        color: theme.textPrimary
+                                    }}
+                                    value={selectedSpot} onChange={e => setSelectedSpot(e.target.value)}>
+                                    <option value="" className="text-gray-900 bg-white">Selecione o Local de Entrada...</option>
+                                    {checkpoints.map((cp: any) => (<option key={cp.id} value={cp.id} className="text-gray-900 bg-white">{cp.name}</option>))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} style={{ color: theme.textPrimary }} />
+                            </div>
+                        </div>
+
                         {/* 1. Nome e Idade */}
                         <div className="flex gap-3">
                             <div className="flex-1 group">
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Nome Completo</label>
-                                <input required
-                                    className="w-full p-4 rounded-2xl font-bold outline-none border focus:border-purple-500 transition-all"
+                                <input required className="w-full p-4 rounded-2xl font-bold outline-none border focus:border-purple-500 transition-all"
                                     style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
-                                    placeholder="Ex: Ricardo "
-                                    value={regName}
-                                    onChange={e => setRegName(e.target.value)}
-                                />
+                                    placeholder="Ex: Davi Aragão" value={regName} onChange={e => setRegName(e.target.value)} />
                             </div>
                             <div className="w-24 group">
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Idade</label>
-                                <input type="number" required
-                                    className="w-full p-4 rounded-2xl font-bold border outline-none focus:border-purple-500 text-center transition-all"
+                                <input type="number" required className="w-full p-4 rounded-2xl font-bold border outline-none focus:border-purple-500 text-center transition-all"
                                     style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
-                                    placeholder="00"
-                                    value={regAge}
-                                    onChange={e => setRegAge(e.target.value)}
-                                />
+                                    placeholder="00" value={regAge} onChange={e => setRegAge(e.target.value)} />
                             </div>
                         </div>
 
                         {/* 2. Gênero e Igreja */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Seletor de Gênero (Estilo Cápsula) */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Gênero</label>
                                 <div className="flex p-1.5 rounded-2xl transition-colors" style={{ backgroundColor: theme.toggleBg }}>
                                     {['M', 'F'].map(g => (
                                         <button key={g} type="button" onClick={() => setRegGender(g)}
                                             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all shadow-sm
-                                            ${regGender === g
-                                                    ? (g === 'M' ? 'bg-blue-500 text-white shadow-blue-500/30' : 'bg-pink-500 text-white shadow-pink-500/30')
-                                                    : 'text-gray-400 hover:text-gray-500 bg-transparent shadow-none'}`}>
+                                            ${regGender === g ? (g === 'M' ? 'bg-blue-500 text-white shadow-blue-500/30' : 'bg-pink-500 text-white shadow-pink-500/30') : 'text-gray-400 hover:text-gray-500 bg-transparent shadow-none'}`}>
                                             {g === 'M' ? 'HOMEM' : 'MULHER'}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Dropdown Igreja */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Igreja</label>
                                 <div className="relative">
                                     <select className="w-full p-4 pl-5 pr-10 rounded-2xl border font-bold text-sm outline-none appearance-none transition-all cursor-pointer"
                                         style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
                                         value={regChurch} onChange={e => setRegChurch(e.target.value)}>
-                                        {churches.map(c => <option key={c} value={c} className="text-black">{c}</option>)}
+                                        {churches.map(c => <option key={c} value={c} className="text-gray-900 bg-white">{c}</option>)}
                                     </select>
                                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} style={{ color: theme.textPrimary }} />
                                 </div>
@@ -581,7 +554,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
                         <hr style={{ borderColor: theme.borderColor }} className="opacity-50" />
 
-                        {/* 3. Tipo (Membro/Visitante) - Estilo Toggle Grande */}
+                        {/* 3. Tipo (Membro/Visitante) */}
                         <div className="flex bg-gray-100 p-1 rounded-2xl" style={{ backgroundColor: theme.toggleBg }}>
                             <button type="button" onClick={() => setRegType('VISITOR')}
                                 className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2
@@ -595,35 +568,25 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </button>
                         </div>
 
-                        {/* 4. WhatsApp (Condicional e Animado) */}
+                        {/* 4. WhatsApp */}
                         {regType === 'VISITOR' && (
                             <div className="animate-fade-in-down">
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-orange-500">WhatsApp (Obrigatório para visitantes)</label>
-                                <input
-                                    className="w-full p-4 rounded-2xl font-bold border-2 outline-none transition-all placeholder-opacity-50"
-                                    style={{
-                                        backgroundColor: isLightMode ? '#FFF7ED' : 'rgba(249, 115, 22, 0.1)',
-                                        borderColor: isLightMode ? '#FFEDD5' : 'rgba(249, 115, 22, 0.3)',
-                                        color: isLightMode ? '#9A3412' : '#FB923C'
-                                    }}
-                                    placeholder="(DDD) xxxxx-xxxx"
-                                    value={regPhone}
-                                    onChange={e => setRegPhone(formatPhone(e.target.value))}
-                                    maxLength={15}
-                                />
+                                <input className="w-full p-4 rounded-2xl font-bold border-2 outline-none transition-all placeholder-opacity-50"
+                                    style={{ backgroundColor: isLightMode ? '#FFF7ED' : 'rgba(249, 115, 22, 0.1)', borderColor: isLightMode ? '#FFEDD5' : 'rgba(249, 115, 22, 0.3)', color: isLightMode ? '#9A3412' : '#FB923C' }}
+                                    placeholder="(DDD) 9xxxx-xxxx" value={regPhone} onChange={e => setRegPhone(formatPhone(e.target.value))} maxLength={15} />
                             </div>
                         )}
 
-                        {/* 5. Marketing (Chips) */}
+                        {/* 5. Marketing (GRID) */}
                         <div>
                             <label className="text-[10px] font-bold uppercase ml-3 mb-2 block" style={{ color: theme.textSecondary }}>Como conheceu o evento?</label>
-                            <div className="flex flex-wrap gap-2">
+                            {/* MUDANÇA AQUI: GRID LAYOUT */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {['Instagram', 'WhatsApp', 'Amigo/Convite', 'Faixa / Rua', 'Pastor / Líder', 'Youtube / Tiktok', 'Google / Site', 'Outros'].map(src => (
                                     <button key={src} type="button" onClick={() => setRegSource(src)}
-                                        className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold border transition-all truncate flex-1 md:flex-none
-                                        ${regSource === src
-                                                ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20'
-                                                : 'border-transparent hover:border-current'}`}
+                                        className={`px-2 py-3 rounded-xl text-[10px] md:text-xs font-bold border transition-all truncate
+                                        ${regSource === src ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20' : 'border-transparent hover:border-current'}`}
                                         style={regSource !== src ? { backgroundColor: theme.chipBg, color: theme.textSecondary } : {}}>
                                         {src}
                                     </button>
@@ -631,11 +594,10 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* Botão Salvar */}
                         <button type="submit" disabled={loadingReg || !selectedSpot}
                             className="w-full py-4 mt-2 rounded-2xl text-white font-black text-lg shadow-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ background: theme.gradient }}>
-                            {loadingReg ? 'SALVANDO...' : 'CADASTRAR PARTICIPANTE'}
+                            {!selectedSpot ? 'SELECIONE O LOCAL ACIMA ☝️' : loadingReg ? 'SALVANDO...' : 'CADASTRAR PARTICIPANTE'}
                         </button>
                     </form>
                 )}
@@ -659,17 +621,17 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                             <input type="number" placeholder="Idade" value={editAge} onChange={e => setEditAge(e.target.value)} className="w-20 p-2 rounded border font-bold text-center text-black" />
                                             <div className="flex flex-1 gap-1">{['M', 'F'].map(g => (<button key={g} onClick={() => setEditGender(g)} className={`flex-1 rounded font-bold text-xs ${editGender === g ? 'bg-purple-500 text-white' : 'bg-white border text-gray-400'}`}>{g}</button>))}</div>
                                         </div>
-                                        <input
-                                            type="text"
-                                            placeholder="WhatsApp"
-                                            value={editPhone}
-                                            onChange={e => setEditPhone(formatPhone(e.target.value))} // MÁSCARA AQUI
-                                            maxLength={15}
-                                            className="w-full p-2 rounded border text-black font-bold"
-                                        />
+                                        <input type="text" placeholder="WhatsApp" value={editPhone} onChange={e => setEditPhone(formatPhone(e.target.value))} maxLength={15} className="w-full p-2 rounded border text-black font-bold" />
                                         <select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-2 rounded border text-black font-bold text-sm bg-white">
-                                            <option value="">Origem?</option>
-                                            <option value="Instagram">Instagram</option><option value="WhatsApp">WhatsApp</option><option value="Amigo/Convite">Amigo/Convite</option><option value="Faixa / Rua">Faixa / Rua</option><option value="Pastor / Líder">Pastor / Líder</option><option value="Youtube / Tiktok">Youtube/Tiktok</option><option value="Google / Site">Google/Site</option><option value="Outros">Outros</option>
+                                            <option value="" className="text-gray-900 bg-white">Origem?</option>
+                                            <option value="Instagram" className="text-gray-900 bg-white">Instagram</option>
+                                            <option value="WhatsApp" className="text-gray-900 bg-white">WhatsApp</option>
+                                            <option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option>
+                                            <option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option>
+                                            <option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option>
+                                            <option value="Youtube / Tiktok" className="text-gray-900 bg-white">Youtube/Tiktok</option>
+                                            <option value="Google / Site" className="text-gray-900 bg-white">Google/Site</option>
+                                            <option value="Outros" className="text-gray-900 bg-white">Outros</option>
                                         </select>
                                         <button onClick={() => saveEdit(p.id)} className="w-full py-3 bg-green-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 mt-1"><Save size={16} /> SALVAR</button>
                                     </div>
@@ -701,7 +663,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <div><label className="text-xs font-bold text-gray-400 ml-1">Gênero</label><div className="flex gap-2">{['M', 'F'].map(g => (<button key={g} onClick={() => setEditGender(g)} className={`flex-1 py-3 rounded-xl font-black text-sm border ${editGender === g ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-50 text-gray-400'}`}>{g === 'M' ? 'HOMEM' : 'MULHER'}</button>))}</div></div>
                             )}
                             {!personToUpdate.marketingSource && (
-                                <div><label className="text-xs font-bold text-gray-400 ml-1">Como conheceu?</label><select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500"><option value="">Selecione...</option><option value="Instagram">Instagram</option><option value="Amigo/Convite">Amigo/Convite</option><option value="Faixa / Rua">Faixa / Rua</option><option value="Pastor / Líder">Pastor / Líder</option><option value="Outros">Outros</option></select></div>
+                                <div><label className="text-xs font-bold text-gray-400 ml-1">Como conheceu?</label><select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500"><option value="" className="text-gray-900 bg-white">Selecione...</option><option value="Instagram" className="text-gray-900 bg-white">Instagram</option><option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option><option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option><option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option><option value="Outros" className="text-gray-900 bg-white">Outros</option></select></div>
                             )}
                             {!personToUpdate.age && (
                                 <div><label className="text-xs font-bold text-gray-400 ml-1">Idade</label><input type="number" value={editAge} onChange={e => setEditAge(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500" placeholder="Ex: 25" /></div>
