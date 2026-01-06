@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import {
-    CheckCircle2, XCircle, QrCode, UserPlus, MapPin, ArrowLeft,
+    CheckCircle2, XCircle, QrCode, MapPin, ArrowLeft,
     Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck, LayoutDashboard,
-    FileWarning, Save, AlertTriangle, Search, RefreshCw, Mail
+    FileWarning, Save, AlertTriangle, Search, RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -111,16 +111,16 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [pauseScan, setPauseScan] = useState(false);
 
     // STATES DE CADASTRO
-    const [regName, setRegName] = useState('');
-    const [regEmail, setRegEmail] = useState(''); // <--- NOVO STATE EMAIL
-    const [regAge, setRegAge] = useState('');
-    const [regPhone, setRegPhone] = useState('');
-    const [regType, setRegType] = useState('VISITOR');
-    const [regGender, setRegGender] = useState('M');
-    const [regChurch, setRegChurch] = useState('Ibmg Sede');
-    const [regSource, setRegSource] = useState('');
-    const [regIsStaff, setRegIsStaff] = useState(false);
-    const [loadingReg, setLoadingReg] = useState(false);
+    // const [regName, setRegName] = useState('');
+    // const [regEmail, setRegEmail] = useState(''); // <--- NOVO STATE EMAIL
+    // const [regAge, setRegAge] = useState('');
+    // const [regPhone, setRegPhone] = useState('');
+    // const [regType, setRegType] = useState('VISITOR');
+    // const [regGender, setRegGender] = useState('M');
+    // const [regChurch, setRegChurch] = useState('Ibmg Sede');
+    // const [regSource, setRegSource] = useState('');
+    // const [regIsStaff, setRegIsStaff] = useState(false);
+    // const [loadingReg, setLoadingReg] = useState(false);
 
     // STATES DE BUSCA E SANEAMENTO
     const [searchTerm, setSearchTerm] = useState('');
@@ -238,39 +238,39 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     };
 
     // --- 3. CADASTRO COM EMAIL ---
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
-        setLoadingReg(true);
-        try {
-            const res = await fetch(`${API_URL}/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: regName,
-                    email: regEmail, // <--- ENVIANDO EMAIL
-                    type: regType, church: regChurch, age: regAge, gender: regGender,
-                    phone: regPhone, marketingSource: regSource, isStaff: regIsStaff
-                })
-            });
-            if (res.ok) {
-                const newUser = await res.json();
-                await handleTrack(newUser.id);
-                // Limpa form
-                setRegName(''); setRegEmail(''); setRegAge(''); setRegPhone(''); setRegSource(''); setRegIsStaff(false);
-                addToast("Cadastro realizado!", 'success');
-            } else {
-                const err = await res.json();
-                // Verifica se é erro de email duplicado
-                if (err.details && err.details.includes('Unique constraint')) {
-                    addToast("Este E-mail já está cadastrado!", 'error');
-                } else {
-                    addToast("Erro ao cadastrar.", 'error');
-                }
-            }
-        } catch (e) { addToast("Erro de conexão", 'error'); }
-        finally { setLoadingReg(false); }
-    };
+    // const handleRegister = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
+    //     setLoadingReg(true);
+    //     try {
+    //         const res = await fetch(`${API_URL}/register`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({
+    //                 name: regName,
+    //                 email: regEmail, // <--- ENVIANDO EMAIL
+    //                 type: regType, church: regChurch, age: regAge, gender: regGender,
+    //                 phone: regPhone, marketingSource: regSource, isStaff: regIsStaff
+    //             })
+    //         });
+    //         if (res.ok) {
+    //             const newUser = await res.json();
+    //             await handleTrack(newUser.id);
+    //             // Limpa form
+    //             setRegName(''); setRegEmail(''); setRegAge(''); setRegPhone(''); setRegSource(''); setRegIsStaff(false);
+    //             addToast("Cadastro realizado!", 'success');
+    //         } else {
+    //             const err = await res.json();
+    //             // Verifica se é erro de email duplicado
+    //             if (err.details && err.details.includes('Unique constraint')) {
+    //                 addToast("Este E-mail já está cadastrado!", 'error');
+    //             } else {
+    //                 addToast("Erro ao cadastrar.", 'error');
+    //             }
+    //         }
+    //     } catch (e) { addToast("Erro de conexão", 'error'); }
+    //     finally { setLoadingReg(false); }
+    // };
 
     if (!staffUser) return <StaffLogin onLogin={user => { setStaffUser(user); localStorage.setItem('ekklesia_staff_user', JSON.stringify(user)); }} isLightMode={isLightMode} />;
 
@@ -300,7 +300,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                     {[
                         { id: 'COUNTER', icon: <MousePointerClick size={16} />, label: 'Contador' },
                         { id: 'SCAN', icon: <QrCode size={16} />, label: 'Scanner' },
-                        { id: 'REGISTER', icon: <UserPlus size={16} />, label: 'Novo' },
+                        // { id: 'REGISTER', icon: <UserPlus size={16} />, label: 'Novo' },
                         { id: 'CLEANUP', icon: <FileWarning size={16} />, label: 'Pendências' }
                     ].map((tab) => (
                         <button key={tab.id} onClick={() => setMode(tab.id as any)} className={`flex-1 py-3 px-2 rounded-xl font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 transition-all whitespace-nowrap ${mode === tab.id ? 'shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-50'}`} style={{ color: mode === tab.id ? 'white' : theme.textPrimary, background: mode === tab.id ? theme.gradient : 'transparent' }}>{tab.icon} {tab.label}</button>
@@ -402,8 +402,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                         )}
                     </div>
                 )}
-
-                {/* === CADASTRO === */}
+                {/* 
                 {mode === 'REGISTER' && (
                     <form onSubmit={handleRegister} className="flex flex-col gap-5 animate-fade-in p-6 rounded-[2rem] shadow-sm border transition-colors duration-500" style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
                         <div className="flex items-center justify-between">
@@ -411,7 +410,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             <div className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider opacity-60" style={{ backgroundColor: theme.chipBg, color: theme.textPrimary }}>Cadastro Rápido</div>
                         </div>
 
-                        {/* --- SELETOR DE LOCAL OBRIGATÓRIO --- */}
+                     
                         <div>
                             <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-red-500">📍 Onde você está? (Obrigatório)</label>
                             <div className="relative">
@@ -426,7 +425,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* 1. Nome e Idade */}
+                      
                         <div className="flex gap-3">
                             <div className="flex-1 group">
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Nome Completo</label>
@@ -438,7 +437,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* --- NOVO CAMPO EMAIL --- */}
+                     
                         <div>
                             <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>E-mail (Para acesso posterior)</label>
                             <div className="relative">
@@ -449,7 +448,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* 2. Gênero e Igreja */}
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Gênero</label>
@@ -472,13 +471,13 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
                         <hr style={{ borderColor: theme.borderColor }} className="opacity-50" />
 
-                        {/* 3. Tipo */}
+                       
                         <div className="flex bg-gray-100 p-1 rounded-2xl" style={{ backgroundColor: theme.toggleBg }}>
                             <button type="button" onClick={() => setRegType('VISITOR')} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${regType === 'VISITOR' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:text-gray-500'}`}><UserPlus size={16} /> VISITANTE</button>
                             <button type="button" onClick={() => setRegType('MEMBER')} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${regType === 'MEMBER' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-gray-400 hover:text-gray-500'}`}><UserCheck size={16} /> MEMBRO</button>
                         </div>
 
-                        {/* 4. WhatsApp */}
+                       
                         {regType === 'VISITOR' && (
                             <div className="animate-fade-in-down">
                                 <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-orange-500">WhatsApp (Obrigatório para visitantes)</label>
@@ -486,7 +485,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         )}
 
-                        {/* 5. Marketing */}
                         <div>
                             <label className="text-[10px] font-bold uppercase ml-3 mb-2 block" style={{ color: theme.textSecondary }}>Como conheceu o evento?</label>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -502,7 +500,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
                         <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 mt-2 rounded-2xl text-white font-black text-lg shadow-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: theme.gradient }}>{!selectedSpot ? 'SELECIONE O LOCAL ACIMA ☝️' : loadingReg ? 'SALVANDO...' : 'CADASTRAR PARTICIPANTE'}</button>
                     </form>
-                )}
+                )} */}
 
                 {/* === PENDÊNCIAS === */}
                 {mode === 'CLEANUP' && (
