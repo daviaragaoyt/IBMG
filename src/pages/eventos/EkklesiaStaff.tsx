@@ -96,6 +96,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [churches, setChurches] = useState<string[]>([]);
     const [selectedSpot, setSelectedSpot] = useState('');
     const [selectedChurch, setSelectedChurch] = useState('Ibmg Sede');
+    const [regSource, setRegSource] = useState('');
     const [selectedAgeGroup, setSelectedAgeGroup] = useState('ADULTO');
     const [selectedGender, setSelectedGender] = useState('M'); // NOVO: Gênero
 
@@ -177,7 +178,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         setTimeout(() => { setPauseScan(false); }, 2500);
     };
 
-    // 3. CADASTRO
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
@@ -190,24 +190,25 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 body: JSON.stringify({
                     name: regName,
                     type: regType,
-                    church: regChurch, // Envia a Igreja
+                    church: regChurch,
                     age: regAge,
-                    gender: regGender, // Envia o Gênero
-                    phone: regPhone,   // Envia o Zap (se tiver)
-                    isStaff: regIsStaff
+                    gender: regGender,
+                    phone: regPhone,
+                    isStaff: regIsStaff,
+                    marketingSource: regSource // <--- ADICIONE ISTO AQUI
                 })
             });
 
             if (res.ok) {
                 const newUser = await res.json();
-                await handleTrack(newUser.id); // Já marca presença automaticamente
+                await handleTrack(newUser.id);
 
-                // Limpa o formulário para o próximo
+                // Limpa tudo
                 setRegName('');
                 setRegAge('');
                 setRegPhone('');
+                setRegSource(''); // <--- LIMPA A ORIGEM TAMBÉM
                 setRegIsStaff(false);
-                // Não limpa Igreja nem Tipo, pois geralmente a fila é do mesmo grupo
 
                 addToast("Cadastro realizado com sucesso!", 'success');
             }
@@ -412,7 +413,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* 3. Tipo (Membro/Visitante) */}
+
                         <div className="grid grid-cols-2 gap-3 mt-2">
                             <button type="button" onClick={() => setRegType('VISITOR')}
                                 className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-orange-500 text-orange-500 bg-orange-50' : 'border-gray-200 text-gray-400'}`}>
@@ -424,7 +425,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </button>
                         </div>
 
-                        {/* 4. WhatsApp (Só aparece se for VISITANTE) */}
+
                         {regType === 'VISITOR' && (
                             <div className="animate-fade-in">
                                 <input className="w-full p-4 rounded-xl font-bold border-2 border-orange-100 outline-none focus:border-orange-500 bg-orange-50/50 text-gray-900 placeholder-orange-300"
@@ -432,10 +433,36 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         )}
 
-                        {/* 5. Botão Salvar */}
+                        <div className="mt-3">
+                            <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">Como conheceu o evento?</label>
+
+
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    'Instagram',
+                                    'WhatsApp',
+                                    'Amigo/Convite',
+                                    'Faixa / Rua',
+                                    'Pastor / Líder',
+                                    'Youtube / Tiktok',
+                                    'Google / Site',
+                                    'Outros'
+                                ].map(src => (
+                                    <button key={src} type="button" onClick={() => setRegSource(src)}
+                                        className={`p-2 rounded-lg text-[10px] md:text-xs font-bold border transition-all truncate
+                ${regSource === src
+                                                ? 'bg-blue-50 border-blue-500 text-blue-600 shadow-sm'
+                                                : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}>
+                                        {src}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg mt-2 hover:brightness-110" style={{ background: theme.gradient }}>
                             {loadingReg ? 'Salvando...' : 'CADASTRAR'}
                         </button>
+
                     </form>
                 )}
             </div>
