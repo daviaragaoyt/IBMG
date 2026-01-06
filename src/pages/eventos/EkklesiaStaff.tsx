@@ -3,11 +3,11 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 import {
     CheckCircle2, XCircle, QrCode, MapPin, ArrowLeft,
     Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck, LayoutDashboard,
-    FileWarning, Save, AlertTriangle, Search, RefreshCw,
+    FileWarning, Save, AlertTriangle, Search, RefreshCw, Megaphone
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// --- TEMA ATUALIZADO ---
+// --- TEMA ---
 const getTheme = (isLightMode: boolean) => ({
     gradient: 'linear-gradient(135deg, #A800E0, #FF3D00)',
     bg: isLightMode ? '#F3F4F6' : '#0F0014',
@@ -99,28 +99,19 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         return saved ? JSON.parse(saved) : null;
     });
 
-    const [mode, setMode] = useState<'COUNTER' | 'SCAN' | 'REGISTER' | 'CLEANUP'>('COUNTER');
+    const [mode, setMode] = useState<'COUNTER' | 'SCAN' | 'CLEANUP'>('COUNTER'); // Removido 'REGISTER'
     const [checkpoints, setCheckpoints] = useState<any[]>([]);
     const [churches, setChurches] = useState<string[]>([]);
+
+    // STATES DO CONTADOR
     const [selectedSpot, setSelectedSpot] = useState('');
     const [selectedChurch, setSelectedChurch] = useState('Ibmg Sede');
     const [selectedAgeGroup, setSelectedAgeGroup] = useState('ADULTO');
     const [selectedGender, setSelectedGender] = useState('M');
+    const [counterSource, setCounterSource] = useState('');
 
     const [toasts, setToasts] = useState<any[]>([]);
     const [pauseScan, setPauseScan] = useState(false);
-
-    // STATES DE CADASTRO
-    // const [regName, setRegName] = useState('');
-    // const [regEmail, setRegEmail] = useState(''); // <--- NOVO STATE EMAIL
-    // const [regAge, setRegAge] = useState('');
-    // const [regPhone, setRegPhone] = useState('');
-    // const [regType, setRegType] = useState('VISITOR');
-    // const [regGender, setRegGender] = useState('M');
-    // const [regChurch, setRegChurch] = useState('Ibmg Sede');
-    // const [regSource, setRegSource] = useState('');
-    // const [regIsStaff, setRegIsStaff] = useState(false);
-    // const [loadingReg, setLoadingReg] = useState(false);
 
     // STATES DE BUSCA E SANEAMENTO
     const [searchTerm, setSearchTerm] = useState('');
@@ -172,7 +163,6 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
     const handleLogout = () => { setStaffUser(null); localStorage.removeItem('ekklesia_staff_user'); };
 
-    // --- FUNÇÕES ---
     const fetchIncomplete = async () => {
         try {
             const res = await fetch(`${API_URL}/people/incomplete`);
@@ -203,15 +193,33 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         } catch (e) { addToast("Erro ao salvar", 'error'); }
     };
 
+    // --- LÓGICA DO CONTADOR COM MARKETING ---
     const handleCount = async (type: 'MEMBER' | 'VISITOR') => {
         if (!selectedSpot) return addToast("Selecione o Local primeiro!", 'error');
+
+        // Verifica se é uma entrada/recepção
+        const currentSpot = checkpoints.find(c => c.id === selectedSpot);
+        const isEntrance = currentSpot?.name.toLowerCase().includes('entrada') || currentSpot?.name.toLowerCase().includes('recepção');
+
         try {
             const res = await fetch(`${API_URL}/count`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ checkpointId: selectedSpot, type, church: selectedChurch, ageGroup: selectedAgeGroup, gender: selectedGender, quantity: 1 })
+                body: JSON.stringify({
+                    checkpointId: selectedSpot,
+                    type,
+                    church: selectedChurch,
+                    ageGroup: selectedAgeGroup,
+                    gender: selectedGender,
+                    quantity: 1,
+                    // Envia a origem apenas se for visitante e estiver na entrada
+                    marketingSource: (type === 'VISITOR' && isEntrance) ? counterSource : null
+                })
             });
-            if (res.ok) addToast(`+1 ${type === 'MEMBER' ? 'Membro' : 'Visitante'} Adicionado`, 'success');
+            if (res.ok) {
+                addToast(`+1 ${type === 'MEMBER' ? 'Membro' : 'Visitante'} Adicionado`, 'success');
+                setCounterSource(''); // Limpa a seleção após contar
+            }
         } catch (error) { addToast("Erro de conexão.", 'error'); }
     };
 
@@ -237,52 +245,21 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         if (!showUpdateModal) setTimeout(() => { if (!showUpdateModal) setPauseScan(false); }, 2500);
     };
 
-    // --- 3. CADASTRO COM EMAIL ---
-    // const handleRegister = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-    //     if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
-    //     setLoadingReg(true);
-    //     try {
-    //         const res = await fetch(`${API_URL}/register`, {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({
-    //                 name: regName,
-    //                 email: regEmail, // <--- ENVIANDO EMAIL
-    //                 type: regType, church: regChurch, age: regAge, gender: regGender,
-    //                 phone: regPhone, marketingSource: regSource, isStaff: regIsStaff
-    //             })
-    //         });
-    //         if (res.ok) {
-    //             const newUser = await res.json();
-    //             await handleTrack(newUser.id);
-    //             // Limpa form
-    //             setRegName(''); setRegEmail(''); setRegAge(''); setRegPhone(''); setRegSource(''); setRegIsStaff(false);
-    //             addToast("Cadastro realizado!", 'success');
-    //         } else {
-    //             const err = await res.json();
-    //             // Verifica se é erro de email duplicado
-    //             if (err.details && err.details.includes('Unique constraint')) {
-    //                 addToast("Este E-mail já está cadastrado!", 'error');
-    //             } else {
-    //                 addToast("Erro ao cadastrar.", 'error');
-    //             }
-    //         }
-    //     } catch (e) { addToast("Erro de conexão", 'error'); }
-    //     finally { setLoadingReg(false); }
-    // };
+    // Helper para saber se estamos na Entrada (para mostrar o Marketing no contador)
+    const isCurrentSpotEntrance = () => {
+        const spot = checkpoints.find(c => c.id === selectedSpot);
+        return spot && (spot.name.toLowerCase().includes('entrada') || spot.name.toLowerCase().includes('recepção'));
+    };
 
     if (!staffUser) return <StaffLogin onLogin={user => { setStaffUser(user); localStorage.setItem('ekklesia_staff_user', JSON.stringify(user)); }} isLightMode={isLightMode} />;
 
     return (
         <div className="min-h-screen w-full font-sans flex flex-col transition-colors duration-500" style={{ backgroundColor: theme.bg, color: theme.textPrimary }}>
 
-            {/* TOASTS */}
             <div className="fixed top-0 right-0 p-4 z-50 flex flex-col gap-2 pointer-events-none">
                 {toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast msg={t.msg} type={t.type} onClose={() => removeToast(t.id)} /></div>)}
             </div>
 
-            {/* HEADER */}
             <div className="px-6 py-6 pb-12 shadow-sm relative z-20 flex justify-between items-start" style={{ background: theme.cardBg }}>
                 <div className="flex items-center gap-3">
                     <Link to="/ekklesia" className="p-2 rounded-full hover:bg-gray-100 transition-all"><ArrowLeft size={20} /></Link>
@@ -294,13 +271,12 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 </div>
             </div>
 
-            {/* NAVEGAÇÃO */}
             <div className="px-6 -mt-8 relative z-30">
                 <div className="flex rounded-2xl shadow-xl p-1.5 justify-between border overflow-x-auto" style={{ background: theme.cardBg, borderColor: theme.borderColor }}>
                     {[
                         { id: 'COUNTER', icon: <MousePointerClick size={16} />, label: 'Contador' },
                         { id: 'SCAN', icon: <QrCode size={16} />, label: 'Scanner' },
-                        // { id: 'REGISTER', icon: <UserPlus size={16} />, label: 'Novo' },
+                        // REMOVIDO: { id: 'REGISTER', icon: <UserPlus size={16} />, label: 'Novo' },
                         { id: 'CLEANUP', icon: <FileWarning size={16} />, label: 'Pendências' }
                     ].map((tab) => (
                         <button key={tab.id} onClick={() => setMode(tab.id as any)} className={`flex-1 py-3 px-2 rounded-xl font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 transition-all whitespace-nowrap ${mode === tab.id ? 'shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-50'}`} style={{ color: mode === tab.id ? 'white' : theme.textPrimary, background: mode === tab.id ? theme.gradient : 'transparent' }}>{tab.icon} {tab.label}</button>
@@ -331,6 +307,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
                         <hr className="border-gray-200/50" />
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold uppercase opacity-50 ml-1">Gênero</label>
@@ -349,6 +326,23 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* --- NOVO: MARKETING NO CONTADOR (SÓ APARECE NA ENTRADA) --- */}
+                        {isCurrentSpotEntrance() && (
+                            <div className="animate-fade-in">
+                                <label className="text-xs font-bold uppercase opacity-50 ml-1 mb-2 block flex items-center gap-1"><Megaphone size={12} /> Como conheceu? (Para Visitantes)</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {['Instagram', 'WhatsApp', 'Amigo/Convite', 'Faixa / Rua', 'Pastor / Líder', 'Youtube / Tiktok', 'Google / Site', 'Outros'].map(src => (
+                                        <button key={src} onClick={() => setCounterSource(src)}
+                                            className={`px-2 py-2 rounded-lg text-[10px] font-bold border transition-all truncate
+                                            ${counterSource === src ? 'bg-blue-500 border-blue-500 text-white' : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+                                            {src}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4 mt-2">
                             <button onClick={() => handleCount('VISITOR')} disabled={!selectedSpot} className="group h-32 rounded-[2rem] shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 disabled:opacity-50 relative overflow-hidden bg-white border border-gray-100">
                                 <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 opacity-10 group-hover:opacity-20 transition-opacity"></div>
@@ -396,111 +390,12 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${p.hasEntered ? 'bg-green-200 text-green-700' : 'bg-gray-100 text-gray-400 group-hover:bg-purple-500 group-hover:text-white'}`}>{p.hasEntered ? <CheckCircle2 size={16} /> : <ChevronDown size={16} className="-rotate-90" />}</div>
                                         </button>
                                     ))}
-                                    {searchTerm.length >= 3 && searchResults.length === 0 && !searching && <div className="text-center text-gray-400 py-4 text-sm">Ninguém encontrado. <br /><button onClick={() => setMode('REGISTER')} className="text-blue-500 font-bold underline mt-1">Cadastrar Novo?</button></div>}
+                                    {searchTerm.length >= 3 && searchResults.length === 0 && !searching && <div className="text-center text-gray-400 py-4 text-sm">Ninguém encontrado. <br /><button onClick={() => console.log('Cadastro desativado')} className="text-blue-500 font-bold underline mt-1 opacity-50 cursor-not-allowed">Cadastro desativado</button></div>}
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
-                {/* 
-                {mode === 'REGISTER' && (
-                    <form onSubmit={handleRegister} className="flex flex-col gap-5 animate-fade-in p-6 rounded-[2rem] shadow-sm border transition-colors duration-500" style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xl tracking-tight" style={{ color: theme.textPrimary }}>Novo Participante</h3>
-                            <div className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider opacity-60" style={{ backgroundColor: theme.chipBg, color: theme.textPrimary }}>Cadastro Rápido</div>
-                        </div>
-
-                     
-                        <div>
-                            <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-red-500">📍 Onde você está? (Obrigatório)</label>
-                            <div className="relative">
-                                <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" style={{ color: theme.textPrimary }} />
-                                <select className="w-full p-4 pl-12 rounded-2xl border font-bold text-sm outline-none appearance-none transition-all cursor-pointer"
-                                    style={{ backgroundColor: theme.inputBg, borderColor: !selectedSpot ? '#EF4444' : theme.inputBorder, color: theme.textPrimary }}
-                                    value={selectedSpot} onChange={e => setSelectedSpot(e.target.value)}>
-                                    <option value="" className="text-gray-900 bg-white">Selecione o Local de Entrada...</option>
-                                    {checkpoints.map((cp: any) => (<option key={cp.id} value={cp.id} className="text-gray-900 bg-white">{cp.name}</option>))}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} style={{ color: theme.textPrimary }} />
-                            </div>
-                        </div>
-
-                      
-                        <div className="flex gap-3">
-                            <div className="flex-1 group">
-                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Nome Completo</label>
-                                <input required className="w-full p-4 rounded-2xl font-bold outline-none border focus:border-purple-500 transition-all" style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }} placeholder="Ex: Davi Aragão" value={regName} onChange={e => setRegName(e.target.value)} />
-                            </div>
-                            <div className="w-24 group">
-                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Idade</label>
-                                <input type="number" required className="w-full p-4 rounded-2xl font-bold border outline-none focus:border-purple-500 text-center transition-all" style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }} placeholder="00" value={regAge} onChange={e => setRegAge(e.target.value)} />
-                            </div>
-                        </div>
-
-                     
-                        <div>
-                            <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>E-mail (Para acesso posterior)</label>
-                            <div className="relative">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" style={{ color: theme.textPrimary }} />
-                                <input required type="email" className="w-full p-4 pl-12 rounded-2xl font-bold outline-none border focus:border-purple-500 transition-all"
-                                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
-                                    placeholder="exemplo@email.com" value={regEmail} onChange={e => setRegEmail(e.target.value)} />
-                            </div>
-                        </div>
-
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Gênero</label>
-                                <div className="flex p-1.5 rounded-2xl transition-colors" style={{ backgroundColor: theme.toggleBg }}>
-                                    {['M', 'F'].map(g => (
-                                        <button key={g} type="button" onClick={() => setRegGender(g)} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all shadow-sm ${regGender === g ? (g === 'M' ? 'bg-blue-500 text-white shadow-blue-500/30' : 'bg-pink-500 text-white shadow-pink-500/30') : 'text-gray-400 hover:text-gray-500 bg-transparent shadow-none'}`}>{g === 'M' ? 'HOMEM' : 'MULHER'}</button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Igreja</label>
-                                <div className="relative">
-                                    <select className="w-full p-4 pl-5 pr-10 rounded-2xl border font-bold text-sm outline-none appearance-none transition-all cursor-pointer" style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }} value={regChurch} onChange={e => setRegChurch(e.target.value)}>
-                                        {churches.map(c => <option key={c} value={c} className="text-black">{c}</option>)}
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} style={{ color: theme.textPrimary }} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr style={{ borderColor: theme.borderColor }} className="opacity-50" />
-
-                       
-                        <div className="flex bg-gray-100 p-1 rounded-2xl" style={{ backgroundColor: theme.toggleBg }}>
-                            <button type="button" onClick={() => setRegType('VISITOR')} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${regType === 'VISITOR' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:text-gray-500'}`}><UserPlus size={16} /> VISITANTE</button>
-                            <button type="button" onClick={() => setRegType('MEMBER')} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${regType === 'MEMBER' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-gray-400 hover:text-gray-500'}`}><UserCheck size={16} /> MEMBRO</button>
-                        </div>
-
-                       
-                        {regType === 'VISITOR' && (
-                            <div className="animate-fade-in-down">
-                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-orange-500">WhatsApp (Obrigatório para visitantes)</label>
-                                <input className="w-full p-4 rounded-2xl font-bold border-2 outline-none transition-all placeholder-opacity-50" style={{ backgroundColor: isLightMode ? '#FFF7ED' : 'rgba(249, 115, 22, 0.1)', borderColor: isLightMode ? '#FFEDD5' : 'rgba(249, 115, 22, 0.3)', color: isLightMode ? '#9A3412' : '#FB923C' }} placeholder="(DDD) 9xxxx-xxxx" value={regPhone} onChange={e => setRegPhone(formatPhone(e.target.value))} maxLength={15} />
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="text-[10px] font-bold uppercase ml-3 mb-2 block" style={{ color: theme.textSecondary }}>Como conheceu o evento?</label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {['Instagram', 'WhatsApp', 'Amigo/Convite', 'Faixa / Rua', 'Pastor / Líder', 'Youtube / Tiktok', 'Google / Site', 'Outros'].map(src => (
-                                    <button key={src} type="button" onClick={() => setRegSource(src)}
-                                        className={`px-2 py-3 rounded-xl text-[10px] md:text-xs font-bold border transition-all truncate ${regSource === src ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20' : 'border-transparent hover:border-current'}`}
-                                        style={regSource !== src ? { backgroundColor: theme.chipBg, color: theme.textSecondary } : {}}>
-                                        {src}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 mt-2 rounded-2xl text-white font-black text-lg shadow-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: theme.gradient }}>{!selectedSpot ? 'SELECIONE O LOCAL ACIMA ☝️' : loadingReg ? 'SALVANDO...' : 'CADASTRAR PARTICIPANTE'}</button>
-                    </form>
-                )} */}
 
                 {/* === PENDÊNCIAS === */}
                 {mode === 'CLEANUP' && (
