@@ -85,8 +85,6 @@ const StaffLogin = ({ onLogin, isLightMode }: { onLogin: (user: any) => void, is
         </div>
     );
 };
-
-// --- PAINEL PRINCIPAL ---
 export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [staffUser, setStaffUser] = useState<any>(() => {
         const saved = localStorage.getItem('ekklesia_staff_user');
@@ -96,23 +94,22 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [mode, setMode] = useState<'COUNTER' | 'SCAN' | 'REGISTER'>('COUNTER');
     const [checkpoints, setCheckpoints] = useState<any[]>([]);
     const [churches, setChurches] = useState<string[]>([]);
-
-    // -- ESTADOS DE COLETA DE DADOS --
     const [selectedSpot, setSelectedSpot] = useState('');
     const [selectedChurch, setSelectedChurch] = useState('Ibmg Sede');
     const [selectedAgeGroup, setSelectedAgeGroup] = useState('ADULTO');
     const [selectedGender, setSelectedGender] = useState('M'); // NOVO: Gênero
 
-    // -- UI States --
     const [toasts, setToasts] = useState<any[]>([]); // Sistema de Toasts
     const [pauseScan, setPauseScan] = useState(false);
 
-    // -- Cadastro --
     const [regName, setRegName] = useState('');
-    const [regType, setRegType] = useState('VISITOR');
     const [regAge, setRegAge] = useState('');
+    const [regPhone, setRegPhone] = useState(''); // Novo: WhatsApp
+    const [regType, setRegType] = useState('VISITOR');
+    const [regGender, setRegGender] = useState('M'); // Novo: Gênero
+    const [regChurch, setRegChurch] = useState('Ibmg Sede'); // Novo: Igreja
+    const [regIsStaff, setRegIsStaff] = useState(false);
     const [loadingReg, setLoadingReg] = useState(false);
-
     const API_URL = import.meta.env.VITE_API_URL;
     const theme = getTheme(isLightMode);
 
@@ -184,17 +181,34 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedSpot) return addToast("Selecione o local primeiro.", 'error');
+
         setLoadingReg(true);
         try {
             const res = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: regName, type: regType, church: selectedChurch, age: regAge })
+                body: JSON.stringify({
+                    name: regName,
+                    type: regType,
+                    church: regChurch, // Envia a Igreja
+                    age: regAge,
+                    gender: regGender, // Envia o Gênero
+                    phone: regPhone,   // Envia o Zap (se tiver)
+                    isStaff: regIsStaff
+                })
             });
+
             if (res.ok) {
                 const newUser = await res.json();
-                await handleTrack(newUser.id);
-                setRegName(''); setRegAge('');
+                await handleTrack(newUser.id); // Já marca presença automaticamente
+
+                // Limpa o formulário para o próximo
+                setRegName('');
+                setRegAge('');
+                setRegPhone('');
+                setRegIsStaff(false);
+                // Não limpa Igreja nem Tipo, pois geralmente a fila é do mesmo grupo
+
                 addToast("Cadastro realizado com sucesso!", 'success');
             }
         } catch (e) { addToast("Erro ao cadastrar", 'error'); }
@@ -365,15 +379,60 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
                 {mode === 'REGISTER' && (
                     <form onSubmit={handleRegister} className="flex flex-col gap-4 animate-fade-in p-6 rounded-[2rem] bg-white shadow-sm border border-gray-100">
-                        <h3 className="font-black text-xl text-gray-800">Novo Cadastro</h3>
-                        <input required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900"
-                            placeholder="Nome Completo" value={regName} onChange={e => setRegName(e.target.value)} />
-                        <input type="number" required className="w-full p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900"
-                            placeholder="Idade (Ex: 25)" value={regAge} onChange={e => setRegAge(e.target.value)} />
-                        <div className="grid grid-cols-2 gap-3">
-                            <button type="button" onClick={() => setRegType('VISITOR')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-orange-500 text-orange-500 bg-orange-50' : 'border-gray-200 text-gray-400'}`}>VISITANTE</button>
-                            <button type="button" onClick={() => setRegType('MEMBER')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'MEMBER' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400'}`}>MEMBRO</button>
+                        <h3 className="font-black text-xl text-gray-800 mb-2">Novo Participante</h3>
+
+                        {/* 1. Nome e Idade (Lado a Lado para economizar espaço) */}
+                        <div className="flex gap-3">
+                            <input required className="flex-1 p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900"
+                                placeholder="Nome Completo" value={regName} onChange={e => setRegName(e.target.value)} />
+                            <input type="number" required className="w-24 p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900 text-center"
+                                placeholder="Idade" value={regAge} onChange={e => setRegAge(e.target.value)} />
                         </div>
+
+                        {/* 2. Gênero e Igreja */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* Botões de Gênero Rápidos */}
+                            <div className="flex bg-gray-100 p-1 rounded-xl">
+                                {['M', 'F'].map(g => (
+                                    <button key={g} type="button" onClick={() => setRegGender(g)}
+                                        className={`flex-1 py-3 rounded-lg text-xs font-black transition-all 
+                                ${regGender === g ? 'bg-white shadow text-black' : 'text-gray-400'}`}>
+                                        {g === 'M' ? 'HOMEM' : 'MULHER'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Dropdown de Igreja (Pega da lista automática) */}
+                            <div className="relative">
+                                <select className="w-full h-full p-2 pl-4 rounded-xl border bg-white font-bold text-sm outline-none appearance-none text-gray-800"
+                                    value={regChurch} onChange={e => setRegChurch(e.target.value)}>
+                                    {churches.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={14} />
+                            </div>
+                        </div>
+
+                        {/* 3. Tipo (Membro/Visitante) */}
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                            <button type="button" onClick={() => setRegType('VISITOR')}
+                                className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-orange-500 text-orange-500 bg-orange-50' : 'border-gray-200 text-gray-400'}`}>
+                                VISITANTE
+                            </button>
+                            <button type="button" onClick={() => setRegType('MEMBER')}
+                                className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'MEMBER' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400'}`}>
+                                MEMBRO
+                            </button>
+                        </div>
+
+                        {/* 4. WhatsApp (Só aparece se for VISITANTE) */}
+                        {regType === 'VISITOR' && (
+                            <div className="animate-fade-in">
+                                <input className="w-full p-4 rounded-xl font-bold border-2 border-orange-100 outline-none focus:border-orange-500 bg-orange-50/50 text-gray-900 placeholder-orange-300"
+                                    placeholder="WhatsApp (DDD + Número)" value={regPhone} onChange={e => setRegPhone(e.target.value)} />
+                            </div>
+                        )}
+
+                        {/* 5. Botão Salvar */}
                         <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg mt-2 hover:brightness-110" style={{ background: theme.gradient }}>
                             {loadingReg ? 'Salvando...' : 'CADASTRAR'}
                         </button>
