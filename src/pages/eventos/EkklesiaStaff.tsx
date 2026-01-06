@@ -7,14 +7,18 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// --- TEMA ---
 const getTheme = (isLightMode: boolean) => ({
     gradient: 'linear-gradient(135deg, #A800E0, #FF3D00)',
     bg: isLightMode ? '#F3F4F6' : '#0F0014',
     cardBg: isLightMode ? '#FFFFFF' : '#1A0524',
     textPrimary: isLightMode ? '#1A1A1A' : '#FFFFFF',
-    textSecondary: isLightMode ? '#666666' : '#AAAAAA',
+    textSecondary: isLightMode ? '#666666' : '#9CA3AF',
     borderColor: isLightMode ? '#E5E7EB' : '#2D0A3D',
+    // Novos estilos para o formulário:
+    inputBg: isLightMode ? '#F9FAFB' : 'rgba(255,255,255,0.05)',
+    inputBorder: isLightMode ? '#E5E7EB' : '#2D0A3D',
+    toggleBg: isLightMode ? '#F3F4F6' : 'rgba(0,0,0,0.3)',
+    chipBg: isLightMode ? '#F3F4F6' : 'rgba(255,255,255,0.05)',
 });
 
 // --- FUNÇÃO DE MÁSCARA PARA CELULAR (BR) ---
@@ -507,53 +511,132 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                     </div>
                 )}
 
-                {/* === ABA CADASTRO === */}
+                {/* === ABA CADASTRO (LAYOUT PREMIUM) === */}
                 {mode === 'REGISTER' && (
-                    <form onSubmit={handleRegister} className="flex flex-col gap-4 animate-fade-in p-6 rounded-[2rem] bg-white shadow-sm border border-gray-100">
-                        <h3 className="font-black text-xl text-gray-800 mb-2">Novo Participante</h3>
+                    <form onSubmit={handleRegister} className="flex flex-col gap-5 animate-fade-in p-6 rounded-[2rem] shadow-sm border transition-colors duration-500"
+                        style={{ backgroundColor: theme.cardBg, borderColor: theme.borderColor }}>
+
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xl tracking-tight" style={{ color: theme.textPrimary }}>Novo Participante</h3>
+                            <div className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider opacity-60" style={{ backgroundColor: theme.chipBg, color: theme.textPrimary }}>
+                                Cadastro Rápido
+                            </div>
+                        </div>
+
+                        {/* 1. Nome e Idade */}
                         <div className="flex gap-3">
-                            <input required className="flex-1 p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900" placeholder="Nome Completo" value={regName} onChange={e => setRegName(e.target.value)} />
-                            <input type="number" required className="w-24 p-4 rounded-xl font-bold border outline-none focus:border-purple-500 bg-gray-50 text-gray-900 text-center" placeholder="Idade" value={regAge} onChange={e => setRegAge(e.target.value)} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex bg-gray-100 p-1 rounded-xl">
-                                {['M', 'F'].map(g => (
-                                    <button key={g} type="button" onClick={() => setRegGender(g)} className={`flex-1 py-3 rounded-lg text-xs font-black transition-all ${regGender === g ? 'bg-white shadow text-black' : 'text-gray-400'}`}>{g === 'M' ? 'HOMEM' : 'MULHER'}</button>
-                                ))}
+                            <div className="flex-1 group">
+                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Nome Completo</label>
+                                <input required
+                                    className="w-full p-4 rounded-2xl font-bold outline-none border focus:border-purple-500 transition-all"
+                                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
+                                    placeholder="Ex: Ricardo "
+                                    value={regName}
+                                    onChange={e => setRegName(e.target.value)}
+                                />
                             </div>
-                            <div className="relative">
-                                <select className="w-full h-full p-2 pl-4 rounded-xl border bg-white font-bold text-sm outline-none appearance-none text-gray-800" value={regChurch} onChange={e => setRegChurch(e.target.value)}>
-                                    {churches.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={14} />
+                            <div className="w-24 group">
+                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block transition-colors" style={{ color: theme.textSecondary }}>Idade</label>
+                                <input type="number" required
+                                    className="w-full p-4 rounded-2xl font-bold border outline-none focus:border-purple-500 text-center transition-all"
+                                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
+                                    placeholder="00"
+                                    value={regAge}
+                                    onChange={e => setRegAge(e.target.value)}
+                                />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 mt-2">
-                            <button type="button" onClick={() => setRegType('VISITOR')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'VISITOR' ? 'border-orange-500 text-orange-500 bg-orange-50' : 'border-gray-200 text-gray-400'}`}>VISITANTE</button>
-                            <button type="button" onClick={() => setRegType('MEMBER')} className={`p-3 rounded-xl font-bold border-2 transition-all ${regType === 'MEMBER' ? 'border-purple-600 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400'}`}>MEMBRO</button>
+
+                        {/* 2. Gênero e Igreja */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Seletor de Gênero (Estilo Cápsula) */}
+                            <div>
+                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Gênero</label>
+                                <div className="flex p-1.5 rounded-2xl transition-colors" style={{ backgroundColor: theme.toggleBg }}>
+                                    {['M', 'F'].map(g => (
+                                        <button key={g} type="button" onClick={() => setRegGender(g)}
+                                            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all shadow-sm
+                                            ${regGender === g
+                                                    ? (g === 'M' ? 'bg-blue-500 text-white shadow-blue-500/30' : 'bg-pink-500 text-white shadow-pink-500/30')
+                                                    : 'text-gray-400 hover:text-gray-500 bg-transparent shadow-none'}`}>
+                                            {g === 'M' ? 'HOMEM' : 'MULHER'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Dropdown Igreja */}
+                            <div>
+                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block" style={{ color: theme.textSecondary }}>Igreja</label>
+                                <div className="relative">
+                                    <select className="w-full p-4 pl-5 pr-10 rounded-2xl border font-bold text-sm outline-none appearance-none transition-all cursor-pointer"
+                                        style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.textPrimary }}
+                                        value={regChurch} onChange={e => setRegChurch(e.target.value)}>
+                                        {churches.map(c => <option key={c} value={c} className="text-black">{c}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none" size={16} style={{ color: theme.textPrimary }} />
+                                </div>
+                            </div>
                         </div>
+
+                        <hr style={{ borderColor: theme.borderColor }} className="opacity-50" />
+
+                        {/* 3. Tipo (Membro/Visitante) - Estilo Toggle Grande */}
+                        <div className="flex bg-gray-100 p-1 rounded-2xl" style={{ backgroundColor: theme.toggleBg }}>
+                            <button type="button" onClick={() => setRegType('VISITOR')}
+                                className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2
+                                ${regType === 'VISITOR' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:text-gray-500'}`}>
+                                <UserPlus size={16} /> VISITANTE
+                            </button>
+                            <button type="button" onClick={() => setRegType('MEMBER')}
+                                className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2
+                                ${regType === 'MEMBER' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-gray-400 hover:text-gray-500'}`}>
+                                <UserCheck size={16} /> MEMBRO
+                            </button>
+                        </div>
+
+                        {/* 4. WhatsApp (Condicional e Animado) */}
                         {regType === 'VISITOR' && (
-                            <div className="animate-fade-in">
+                            <div className="animate-fade-in-down">
+                                <label className="text-[10px] font-bold uppercase ml-3 mb-1 block text-orange-500">WhatsApp (Obrigatório para visitantes)</label>
                                 <input
-                                    className="w-full p-4 rounded-xl font-bold border-2 border-orange-100 outline-none focus:border-orange-500 bg-orange-50/50 text-gray-900 placeholder-orange-300"
+                                    className="w-full p-4 rounded-2xl font-bold border-2 outline-none transition-all placeholder-opacity-50"
+                                    style={{
+                                        backgroundColor: isLightMode ? '#FFF7ED' : 'rgba(249, 115, 22, 0.1)',
+                                        borderColor: isLightMode ? '#FFEDD5' : 'rgba(249, 115, 22, 0.3)',
+                                        color: isLightMode ? '#9A3412' : '#FB923C'
+                                    }}
                                     placeholder="(DDD) xxxxx-xxxx"
                                     value={regPhone}
-                                    onChange={e => setRegPhone(formatPhone(e.target.value))} // MÁSCARA AQUI
+                                    onChange={e => setRegPhone(formatPhone(e.target.value))}
                                     maxLength={15}
                                 />
                             </div>
                         )}
 
-                        <div className="mt-1 mb-4">
-                            <label className="text-xs font-bold text-gray-400 ml-1 mb-2 block">Como conheceu o evento?</label>
-                            <div className="grid grid-cols-3 gap-2">
+                        {/* 5. Marketing (Chips) */}
+                        <div>
+                            <label className="text-[10px] font-bold uppercase ml-3 mb-2 block" style={{ color: theme.textSecondary }}>Como conheceu o evento?</label>
+                            <div className="flex flex-wrap gap-2">
                                 {['Instagram', 'WhatsApp', 'Amigo/Convite', 'Faixa / Rua', 'Pastor / Líder', 'Youtube / Tiktok', 'Google / Site', 'Outros'].map(src => (
-                                    <button key={src} type="button" onClick={() => setRegSource(src)} className={`p-2 rounded-lg text-[10px] md:text-xs font-bold border transition-all truncate ${regSource === src ? 'bg-blue-50 border-blue-500 text-blue-600 shadow-sm' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}>{src}</button>
+                                    <button key={src} type="button" onClick={() => setRegSource(src)}
+                                        className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-bold border transition-all truncate flex-1 md:flex-none
+                                        ${regSource === src
+                                                ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20'
+                                                : 'border-transparent hover:border-current'}`}
+                                        style={regSource !== src ? { backgroundColor: theme.chipBg, color: theme.textSecondary } : {}}>
+                                        {src}
+                                    </button>
                                 ))}
                             </div>
                         </div>
 
-                        <button type="submit" disabled={loadingReg || !selectedSpot} className="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:brightness-110" style={{ background: theme.gradient }}>{loadingReg ? 'Salvando...' : 'CADASTRAR'}</button>
+                        {/* Botão Salvar */}
+                        <button type="submit" disabled={loadingReg || !selectedSpot}
+                            className="w-full py-4 mt-2 rounded-2xl text-white font-black text-lg shadow-xl hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ background: theme.gradient }}>
+                            {loadingReg ? 'SALVANDO...' : 'CADASTRAR PARTICIPANTE'}
+                        </button>
                     </form>
                 )}
 
