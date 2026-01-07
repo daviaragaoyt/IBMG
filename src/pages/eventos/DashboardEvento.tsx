@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
-    Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    UserCheck, UserPlus, ArrowLeft, RefreshCw, Crown, Download, Maximize, BarChart3, Clock, MapPin, Zap
+    Users, ArrowLeft, RefreshCw, Baby, Crown, Download, Maximize, BarChart3, MapPin, Zap, TrendingUp, Briefcase, Smile
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// CORES
+// --- PALETA DE CORES ---
 const COLORS = {
     male: '#3B82F6', female: '#EC4899',
     member: '#8B5CF6', visitor: '#F97316',
@@ -20,34 +20,39 @@ const COLORS_MARKETING = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
 export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
-    // Detecta o dia de hoje
     const today = new Date().getDate().toString();
     const [selectedDay, setSelectedDay] = useState(today);
 
-    // Lista de dias (HOJE + Dias do Evento)
+    // Lista de dias do evento
     const eventDays = ['13', '14', '15', '16', '17'];
     const daysToShow = eventDays.includes(today) ? eventDays : [today, ...eventDays];
 
-    // TEMA
+    // --- TEMA ---
     const theme = isLightMode ? {
         bg: '#F3F4F6', text: '#1F2937', subText: '#6B7280', cardBg: '#FFFFFF', cardBorder: '#E5E7EB',
-        shadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', tooltipBg: '#FFFFFF', tooltipText: '#1F2937',
-        barBg: '#E5E7EB'
+        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', tooltipBg: '#FFFFFF', tooltipText: '#1F2937',
+        barBg: '#E5E7EB', gridColor: '#E5E7EB'
     } : {
         bg: '#0F0014', text: '#FFFFFF', subText: '#9CA3AF', cardBg: '#1A0524', cardBorder: '#2D0A3D',
         shadow: '0 0 20px rgba(0,0,0,0.5)', tooltipBg: '#1A0524', tooltipText: '#FFFFFF',
-        barBg: 'rgba(255,255,255,0.1)'
+        barBg: 'rgba(255,255,255,0.1)', gridColor: '#2D0A3D'
     };
 
     const CustomTooltipStyle = {
         backgroundColor: theme.tooltipBg,
-        borderColor: isLightMode ? '#E5E7EB' : '#2D0A3D',
+        borderColor: theme.cardBorder,
         color: theme.tooltipText,
         borderRadius: '12px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+        borderWidth: '1px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        padding: '8px 12px'
     };
 
+    // --- FETCH DADOS ---
     const fetchData = async () => {
         try {
             const res = await fetch(`${API_URL}/dashboard`);
@@ -63,97 +68,89 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         return () => clearInterval(interval);
     }, []);
 
+    // --- TELA CHEIA ---
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-        else if (document.exitFullscreen) document.exitFullscreen();
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((e) => console.log(e));
+            setIsFullScreen(true);
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            setIsFullScreen(false);
+        }
     };
 
+    // --- CÁLCULO PICO (CORRIGIDO TYPE) ---
     const getPeakHour = () => {
         if (!data?.timeline || !data.timeline[selectedDay]) return { hour: '--', val: 0 };
-
         const dayData = data.timeline[selectedDay];
-
-        // CORREÇÃO: Forçamos a tipagem dos dados do sort e do retorno
-        const sorted = Object.entries(dayData).sort((a: [string, any], b: [string, any]) => {
-            return (Number(b[1]) || 0) - (Number(a[1]) || 0);
-        });
-
+        const sorted = Object.entries(dayData).sort((a: [string, any], b: [string, any]) => (Number(b[1]) || 0) - (Number(a[1]) || 0));
         if (sorted.length === 0) return { hour: '--', val: 0 };
-
-        // Retornamos garantindo que 'val' é um número
-        return {
-            hour: `${sorted[0][0]}h`,
-            val: Number(sorted[0][1]) || 0
-        };
+        return { hour: `${sorted[0][0]}h`, val: Number(sorted[0][1]) || 0 };
     };
 
     const peakData = getPeakHour();
 
-    // --- GRÁFICO DE FLUXO (HORÁRIO) ---
+    // --- GRÁFICO DE ÁREA ---
     const renderHourlyChart = () => {
         if (!data?.timeline || !data.timeline[selectedDay]) {
-            return (
-                <div className="h-40 flex flex-col items-center justify-center text-sm font-medium opacity-50" style={{ color: theme.subText }}>
-                    <Clock size={32} className="mb-2 opacity-50" />
-                    Sem dados para o dia {selectedDay}
-                </div>
-            );
+            return <div className="h-48 md:h-64 flex flex-col items-center justify-center opacity-50 text-xs md:text-sm">Sem dados para o dia {selectedDay}</div>;
         }
+
         const dayData = data.timeline[selectedDay];
-        const hours = Object.keys(dayData).sort((a, b) => parseInt(a) - parseInt(b));
-        const maxVal = Math.max(...Object.values(dayData) as number[]) || 1;
+        const chartData = Object.keys(dayData)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(hour => ({ name: `${hour}h`, value: dayData[hour] }));
 
         return (
-            <div className="flex items-end justify-between h-48 gap-2 pt-6 px-2">
-                {hours.map(hour => {
-                    const val = dayData[hour];
-                    const heightPercent = (val / maxVal) * 100;
-                    const isPeak = `${hour}h` === peakData.hour; // Destaca a barra do pico
-
-                    return (
-                        <div key={hour} className="flex flex-col items-center flex-1 group cursor-pointer relative">
-                            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg mb-1 pointer-events-none whitespace-nowrap z-10">{val}</div>
-                            <div className="w-full rounded-t-lg transition-all duration-500 group-hover:brightness-125 relative shadow-lg"
-                                style={{
-                                    height: `${heightPercent}%`,
-                                    minHeight: '8px',
-                                    background: isPeak ? '#FACC15' : 'linear-gradient(to top, #8B5CF6, #3B82F6)', // Amarelo se for pico
-                                    boxShadow: isPeak ? '0 0 15px rgba(250, 204, 21, 0.5)' : 'none'
-                                }}>
-                            </div>
-                            <div className={`text-[10px] font-bold mt-2 ${isPeak ? 'text-yellow-500 scale-110' : 'opacity-60'}`} style={{ color: isPeak ? undefined : theme.text }}>{hour}h</div>
-                        </div>
-                    );
-                })}
+            <div className="h-48 md:h-64 w-full mt-2 md:mt-4 -ml-4 md:ml-0 pr-4">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                        <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.gridColor} opacity={0.5} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 10 }} interval="preserveStartEnd" minTickGap={20} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 10 }} width={35} />
+                        <Tooltip contentStyle={CustomTooltipStyle} />
+                        <Area type="monotone" dataKey="value" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         );
     };
 
-    // --- RAIO-X DETALHADO POR LOCAL ---
+    // --- CARDS RAIO-X ---
     const renderCheckpointsDetails = () => {
-        if (!data?.checkpointsData || !data.checkpointsData[selectedDay]) {
-            return <p className="text-center opacity-50 py-10">Sem dados de locais para o dia {selectedDay}.</p>;
-        }
-
+        if (!data?.checkpointsData || !data.checkpointsData[selectedDay]) return <p className="text-center opacity-50 py-10 text-xs">Sem dados.</p>;
         const locais = Object.entries(data.checkpointsData[selectedDay]);
-        if (locais.length === 0) return <p className="text-center opacity-50 py-10">Nenhum registro encontrado.</p>;
+        if (locais.length === 0) return <p className="text-center opacity-50 py-10 text-xs">Nenhum registro.</p>;
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {locais.map(([nome, stats]: any) => (
-                    <div key={nome} className="p-5 rounded-2xl border flex flex-col gap-4 shadow-sm hover:shadow-md transition-all"
-                        style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-
-                        <div className="flex justify-between items-center pb-3 border-b" style={{ borderColor: theme.cardBorder }}>
-                            <h4 className="font-bold flex items-center gap-2 text-base" style={{ color: theme.text }}><MapPin size={18} className="text-purple-500" /> {nome}</h4>
-                            <span className="font-black text-lg bg-purple-500 text-white px-3 py-1 rounded-lg shadow-lg shadow-purple-500/30">{stats.total}</span>
+                    <div key={nome} className="p-4 rounded-2xl border transition-all active:scale-[0.98]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
+                        <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 className="font-bold text-xs opacity-60 uppercase tracking-wider flex items-center gap-1.5 truncate max-w-[150px] md:max-w-none" style={{ color: theme.subText }}>
+                                    <MapPin size={12} /> {nome}
+                                </h4>
+                                <span className="text-2xl md:text-3xl font-black block mt-0.5" style={{ color: theme.text }}>{stats.total}</span>
+                            </div>
+                            <div className="p-2 rounded-full bg-gray-100/5"><BarChart3 size={16} className="text-purple-500" /></div>
                         </div>
-
-                        <div>
-                            <div className="flex justify-between text-[10px] font-bold uppercase mb-1" style={{ color: theme.subText }}><span className="text-purple-500">Membros ({stats.type?.MEMBER || 0})</span><span className="text-orange-500">Visitantes ({stats.type?.VISITOR || 0})</span></div>
-                            <div className="flex h-2 rounded-full overflow-hidden w-full" style={{ backgroundColor: theme.barBg }}>
-                                <div style={{ width: `${(stats.type?.MEMBER / stats.total) * 100 || 0}%`, background: COLORS.member }}></div>
-                                <div style={{ width: `${(stats.type?.VISITOR / stats.total) * 100 || 0}%`, background: COLORS.visitor }}></div>
+                        <div className="space-y-2">
+                            <div>
+                                <div className="flex justify-between text-[9px] md:text-[10px] font-bold uppercase mb-1" style={{ color: theme.subText }}>
+                                    <span>Visitantes ({stats.type?.VISITOR || 0})</span>
+                                    <span>Membros ({stats.type?.MEMBER || 0})</span>
+                                </div>
+                                <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-200/20">
+                                    <div style={{ width: `${(stats.type?.VISITOR / stats.total) * 100 || 0}%`, background: COLORS.visitor }}></div>
+                                    <div style={{ width: `${(stats.type?.MEMBER / stats.total) * 100 || 0}%`, background: COLORS.member }}></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -162,130 +159,197 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         );
     };
 
-    if (loading || !data) return (
-        <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center font-bold z-50" style={{ backgroundColor: theme.bg, color: theme.text }}>
-            <RefreshCw className="animate-spin mb-4 text-purple-500" size={32} />
-            <span className="animate-pulse">Carregando Dashboard...</span>
-        </div>
-    );
+    if (loading || !data) return <div className="fixed inset-0 flex items-center justify-center font-bold z-50" style={{ backgroundColor: theme.bg, color: theme.text }}><RefreshCw className="animate-spin mb-4 text-purple-500" size={32} /><span className="ml-2 text-sm">Carregando...</span></div>;
 
-    // const genderData = [
-    //     { name: 'Homens', value: data?.byGender?.M || 0 },
-    //     { name: 'Mulheres', value: data?.byGender?.F || 0 },
-    // ];
-
-    // const ageData = [
-    //     { name: 'Crianças', value: data?.byAge?.CRIANCA || 0, fill: COLORS.kids },
-    //     { name: 'Jovens', value: data?.byAge?.JOVEM || 0, fill: COLORS.youth },
-    //     { name: 'Adultos', value: data?.byAge?.ADULTO || 0, fill: COLORS.adult },
-    // ];
-
+    // Dados auxiliares
+    const genderData = [{ name: 'Homens', value: data?.byGender?.M || 0 }, { name: 'Mulheres', value: data?.byGender?.F || 0 }];
+    const ageData = [
+        { name: 'Kids', value: data?.byAge?.CRIANCA || 0, fill: COLORS.kids },
+        { name: 'Jovens', value: data?.byAge?.JOVEM || 0, fill: COLORS.youth },
+        { name: 'Adultos', value: data?.byAge?.ADULTO || 0, fill: COLORS.adult },
+    ];
     const handleExport = () => window.open(`${API_URL}/export`, '_blank');
 
+    // --- CLASSES DE LAYOUT (A FIX DO PROBLEMA) ---
+    // Se FullScreen: Cobre tudo. Se Normal: Relativo e respeita o menu.
+    const containerClasses = isFullScreen
+        ? "fixed inset-0 w-screen h-screen z-50 overflow-y-auto pt-4"
+        : "w-full min-h-screen relative pt-4 md:pt-8";
+
+    // Se Normal: Fica 'sticky' mas deslocado para baixo (top-16 ou top-20) para não ficar atrás do menu.
+    const stickyHeaderClasses = isFullScreen
+        ? "sticky top-0 z-40 px-4 py-4"
+        : "sticky top-[60px] md:top-[70px] z-30 px-4 py-2 mt-[-1rem]";
+
     return (
-        <div className="fixed inset-0 w-screen h-screen overflow-y-auto p-4 pt-24 md:px-6 md:pb-6 md:pt-32 font-sans transition-colors duration-500 z-50 scrollbar-hide" style={{ backgroundColor: theme.bg, color: theme.text }}>
-            <div className="max-w-7xl mx-auto pb-20 md:pb-0">
-                {/* HEADER */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 animate-fade-in-down">
-                    <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
-                        <Link to="/ekklesia" className="p-2 md:p-3 rounded-full transition-all shrink-0 border" style={{ backgroundColor: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)', borderColor: theme.cardBorder }}><ArrowLeft size={18} style={{ color: theme.text }} /></Link>
-                        <div className="flex-1">
-                            <h1 className="text-xl md:text-3xl font-black tracking-tight drop-shadow-sm leading-tight">DASHBOARD <span className="text-purple-500 block md:inline">AO VIVO</span></h1>
-                            <p className="text-[10px] md:text-xs font-medium flex items-center gap-2 mt-1" style={{ color: theme.subText }}><span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></span> Atualizando em tempo real</p>
+        <div className={`${containerClasses} font-sans transition-colors duration-500 pb-20 md:pb-12 scrollbar-hide`} style={{ backgroundColor: theme.bg, color: theme.text }}>
+
+            {/* --- HEADER DASHBOARD --- */}
+            <div className={`${stickyHeaderClasses} backdrop-blur-md border-b border-gray-500/5 shadow-sm transition-all`} style={{ backgroundColor: isLightMode ? 'rgba(243, 244, 246, 0.95)' : 'rgba(15, 0, 20, 0.95)' }}>
+                <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3 animate-fade-in-down">
+                    <div className="flex items-center justify-between w-full md:w-auto">
+                        <div className="flex items-center gap-3">
+                            <Link to="/ekklesia" className="p-2 rounded-xl border active:scale-95 transition-all" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}><ArrowLeft size={18} style={{ color: theme.text }} /></Link>
+                            <div>
+                                <h1 className="text-lg md:text-2xl font-black tracking-tight leading-none uppercase">Dashboard</h1>
+                                <p className="text-[10px] font-bold mt-0.5 opacity-60 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Ao Vivo</p>
+                            </div>
                         </div>
                         <div className="flex gap-2 md:hidden">
-                            <button onClick={toggleFullScreen} className="p-2 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-lg"><Maximize size={18} /></button>
-                            <button onClick={fetchData} className="p-2 bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded-lg"><RefreshCw size={18} /></button>
+                            <button onClick={handleExport} className="p-2 bg-green-500/10 text-green-600 rounded-lg border border-green-500/20 active:scale-95"><Download size={18} /></button>
+                            <button onClick={toggleFullScreen} className={`p-2 rounded-lg border active:scale-95 ${isFullScreen ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
+                                <Maximize size={18} />
+                            </button>
                         </div>
                     </div>
-                    <div className="hidden md:flex gap-3">
-                        <button onClick={toggleFullScreen} className="p-3 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all" title="Modo TV"><Maximize size={20} /></button>
-                        <button onClick={handleExport} className="flex items-center gap-2 px-5 py-3 bg-green-500/10 text-green-600 border border-green-500/20 rounded-xl hover:bg-green-500/20 transition-all font-bold text-sm"><Download size={18} /><span>Excel</span></button>
-                        <button onClick={fetchData} className="p-3 bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded-xl hover:bg-purple-500/20 transition-all"><RefreshCw size={20} /></button>
+
+                    {/* Seletor de Data */}
+                    <div className="w-full md:w-auto overflow-x-auto pb-1 no-scrollbar">
+                        <div className="flex gap-2 min-w-max">
+                            <div className="flex bg-gray-500/5 p-1 rounded-xl border" style={{ borderColor: theme.cardBorder }}>
+                                {daysToShow.map(day => (
+                                    <button key={day} onClick={() => setSelectedDay(day)} className={`px-4 py-1.5 rounded-lg text-[10px] md:text-xs font-black transition-all whitespace-nowrap ${selectedDay === day ? 'bg-purple-600 text-white shadow-md' : 'text-gray-500 hover:bg-white/10'}`}>{day === today ? 'HOJE' : `DIA ${day}`}</button>
+                                ))}
+                            </div>
+                            <div className="hidden md:flex gap-2">
+
+                                <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-green-500/20"><Download size={16} /><span>Excel</span></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* KPI CARDS (TOTAIS) */}
+            {/* --- CONTEÚDO PRINCIPAL --- */}
+            <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
+
+                {/* SEÇÃO 1: BIG NUMBERS */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-                    {/* TOTAL GERAL */}
-                    <div className="col-span-2 sm:col-span-1 border p-4 md:p-5 rounded-2xl relative overflow-hidden" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <div className="absolute right-0 top-0 p-4 opacity-20 text-purple-500"><Crown size={48} className="md:w-16 md:h-16" /></div>
-                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider relative z-10" style={{ color: theme.subText }}>Público Total</span>
-                        <span className="text-4xl md:text-5xl font-black relative z-10 mt-1 md:mt-2 block" style={{ color: theme.text }}>{data?.total || 0}</span>
+                    <div className="col-span-2 lg:col-span-1 p-5 rounded-[1.5rem] relative overflow-hidden flex flex-col justify-center border h-28 md:h-auto" style={{ background: 'linear-gradient(135deg, #8B5CF6, #6366F1)', borderColor: 'transparent' }}>
+                        <div className="absolute right-[-10px] top-[-10px] opacity-20 text-white"><Crown size={80} /></div>
+                        <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest mb-1">Público Total</span>
+                        <span className="text-4xl md:text-6xl font-black text-white">{data?.total || 0}</span>
                     </div>
 
-                    {/* HORÁRIO DE PICO (NOVO) */}
-                    <div className="border p-4 md:p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <div className="flex justify-between items-start">
-                            <span className="text-yellow-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">Horário de Pico</span>
-                            <div className="p-1.5 md:p-2 bg-yellow-500/10 rounded-lg"><Zap size={14} className="md:w-4 md:h-4 text-yellow-500" /></div>
+                    <div className="col-span-1 p-4 md:p-6 rounded-[1.5rem] border flex flex-col justify-between relative overflow-hidden h-28 md:h-auto" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <span className="text-[9px] md:text-xs font-bold uppercase tracking-wider text-yellow-500 flex items-center gap-1"><Zap size={10} /> Pico</span>
+                        <div>
+                            <span className="text-2xl md:text-4xl font-black block" style={{ color: theme.text }}>{peakData.hour}</span>
+                            <span className="text-[9px] md:text-xs font-bold opacity-50 block mt-0.5">{peakData.val} pess.</span>
                         </div>
-                        <div className="flex items-baseline gap-2 mt-2">
-                            <span className="text-3xl md:text-4xl font-black" style={{ color: theme.text }}>{peakData.hour}</span>
-                            <span className="text-xs font-bold opacity-60">({peakData.val} pessoas)</span>
-                        </div>
-                        <div className="w-full h-1 mt-2 rounded-full overflow-hidden" style={{ backgroundColor: theme.barBg }}>
-                            <div className="h-full bg-yellow-500" style={{ width: '100%' }}></div>
-                        </div>
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-500/20"><div className="h-full bg-yellow-500" style={{ width: '100%' }}></div></div>
                     </div>
 
-                    {/* VISITANTES */}
-                    <div className="border p-3 md:p-5 rounded-2xl flex flex-col justify-between h-28 md:h-36" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <div className="flex justify-between items-start"><span className="text-orange-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">Visitantes</span><div className="p-1.5 md:p-2 bg-orange-500/10 rounded-lg"><UserPlus size={14} className="md:w-4 md:h-4 text-orange-500" /></div></div>
-                        <span className="text-3xl md:text-4xl font-black" style={{ color: theme.text }}>{data?.byType?.VISITOR || 0}</span>
-                        <div className="w-full h-1 mt-2 rounded-full overflow-hidden" style={{ backgroundColor: theme.barBg }}><div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${(data?.byType?.VISITOR / data?.total) * 100 || 0}%` }}></div></div>
+                    <div className="col-span-1 p-4 md:p-6 rounded-[1.5rem] border flex flex-col justify-between h-28 md:h-auto" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <span className="text-[9px] md:text-xs font-bold uppercase tracking-wider text-green-500 flex items-center gap-1"><Baby size={12} /> Kids</span>
+                        <span className="text-2xl md:text-4xl font-black" style={{ color: theme.text }}>{data?.byAge?.CRIANCA || 0}</span>
+                        <div className="w-full h-1.5 rounded-full bg-green-500/20 mt-1"><div className="h-full bg-green-500" style={{ width: '100%' }}></div></div>
                     </div>
 
-                    {/* MEMBROS */}
-                    <div className="border p-3 md:p-5 rounded-2xl flex flex-col justify-between h-28 md:h-36" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <div className="flex justify-between items-start"><span className="text-purple-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">Membros</span><div className="p-1.5 md:p-2 bg-purple-500/10 rounded-lg"><UserCheck size={14} className="md:w-4 md:h-4 text-purple-500" /></div></div>
-                        <span className="text-3xl md:text-4xl font-black" style={{ color: theme.text }}>{data?.byType?.MEMBER || 0}</span>
-                        <div className="w-full h-1 mt-2 rounded-full overflow-hidden" style={{ backgroundColor: theme.barBg }}><div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: `${(data?.byType?.MEMBER / data?.total) * 100 || 0}%` }}></div></div>
+                    <div className="col-span-2 p-4 md:p-6 rounded-[1.5rem] border flex flex-col justify-center gap-3 h-auto min-h-[110px]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <div>
+                            <div className="flex items-center justify-between mb-1"><span className="text-[10px] font-bold text-orange-500 uppercase">Visitantes</span><span className="text-xs font-black">{data?.byType?.VISITOR || 0}</span></div>
+                            <div className="w-full h-1.5 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${(data?.byType?.VISITOR / (data?.total || 1)) * 100}%` }}></div></div>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-between mb-1"><span className="text-[10px] font-bold text-purple-500 uppercase">Membros</span><span className="text-xs font-black">{data?.byType?.MEMBER || 0}</span></div>
+                            <div className="w-full h-1.5 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-purple-500" style={{ width: `${(data?.byType?.MEMBER / (data?.total || 1)) * 100}%` }}></div></div>
+                        </div>
                     </div>
                 </div>
 
-                {/* GRÁFICO DE FLUXO GLOBAL (ATUALIZADO) */}
-                <div className="border p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] mb-6 md:mb-8" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h3 className="font-bold text-sm md:text-base flex items-center gap-2" style={{ color: theme.subText }}>
-                            <BarChart3 size={18} className="text-purple-500" /> Fluxo Global de Movimentação (Todos os Pontos)
-                        </h3>
-                        <div className="flex bg-gray-100/10 p-1 rounded-xl overflow-hidden border" style={{ borderColor: theme.cardBorder }}>
-                            {daysToShow.map(day => (
-                                <button key={day} onClick={() => setSelectedDay(day)} className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs font-bold transition-all ${selectedDay === day ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-white/5'}`}>{day === today ? `HOJE (${day})` : `DIA ${day}`}</button>
-                            ))}
+                {/* SEÇÃO 2: GRÁFICOS */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                    <div className="lg:col-span-2 p-5 rounded-[1.5rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 rounded-lg bg-purple-500/10"><TrendingUp size={16} className="text-purple-500" /></div>
+                            <div><h3 className="font-bold text-sm leading-none">Fluxo Global</h3><p className="text-[10px] opacity-50 font-bold">Atividade por horário</p></div>
+                        </div>
+                        {renderHourlyChart()}
+                    </div>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div className="p-4 rounded-[1.5rem] border flex flex-col items-center justify-center text-center" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                            <h3 className="text-[10px] font-bold uppercase opacity-50 mb-2 flex items-center justify-center gap-1"><Users size={12} /> Gênero</h3>
+                            <div className="h-24 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={genderData} cx="50%" cy="50%" innerRadius={25} outerRadius={35} paddingAngle={5} dataKey="value">
+                                            <Cell key="male" fill={COLORS.male} stroke="none" />
+                                            <Cell key="female" fill={COLORS.female} stroke="none" />
+                                        </Pie>
+                                        <Tooltip contentStyle={CustomTooltipStyle} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="flex gap-2 justify-center mt-2">
+                                <div className="text-[9px] font-bold text-blue-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> {data?.byGender?.M || 0}</div>
+                                <div className="text-[9px] font-bold text-pink-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span> {data?.byGender?.F || 0}</div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-[1.5rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                            <h3 className="text-[10px] font-bold uppercase opacity-50 mb-2 flex items-center justify-center gap-1"><Smile size={12} /> Idade</h3>
+                            <div className="h-24 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={ageData} layout="vertical" margin={{ left: -20, right: 10 }}>
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 9, fill: theme.text, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                        <Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} />
+                                        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={10}>
+                                            {ageData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
-                    <div className="w-full rounded-2xl p-4 border border-dashed border-gray-500/20" style={{ backgroundColor: isLightMode ? '#F9FAFB' : 'rgba(0,0,0,0.2)' }}>{renderHourlyChart()}</div>
                 </div>
 
-                {/* RAIO-X DOS LOCAIS */}
-                <div className="border p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] mb-6 md:mb-8" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                    <h3 className="font-bold text-sm md:text-base flex items-center gap-2 mb-6" style={{ color: theme.subText }}>📍 Raio-X Detalhado por Local (Dia {selectedDay})</h3>
-                    {renderCheckpointsDetails()}
-                </div>
+                {/* SEÇÃO 3: ORIGEM & RAIO-X */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-12">
+                    <div className="p-5 rounded-[1.5rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><MapPin size={16} className="text-pink-500" /> Origem</h3>
+                        <div className="h-48 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={data?.bySource || []} margin={{ left: -10, right: 10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.gridColor} opacity={0.5} />
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: theme.text, fontSize: 9, fontWeight: 'bold' }} tickLine={false} axisLine={false} />
+                                    <Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14}>
+                                        {(data?.bySource || []).map((index: number) => (<Cell key={`cell-${index}`} fill={COLORS_MARKETING[index % COLORS_MARKETING.length]} />))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                            {(data?.bySource || []).length === 0 && <p className="text-center text-[10px] opacity-50 mt-4">Nenhum dado.</p>}
+                        </div>
+                    </div>
 
-                {/* IGREJAS E MARKETING */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-12">
-                    <div className="border p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <h3 className="font-bold mb-4 text-sm md:text-base" style={{ color: theme.subText }}>Top 5 Igrejas</h3>
-                        <div className="space-y-3 md:space-y-4">
+                    <div className="p-5 rounded-[1.5rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Briefcase size={16} className="text-blue-500" /> Top 5 Igrejas</h3>
+                        <div className="space-y-2">
                             {(data?.byChurch || []).map((church: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between p-3 md:p-4 rounded-xl border transition-colors" style={{ backgroundColor: isLightMode ? '#F9FAFB' : 'rgba(255,255,255,0.05)', borderColor: theme.cardBorder }}>
-                                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden"><span className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${index === 0 ? 'bg-yellow-500 text-black shadow-lg' : 'bg-gray-200 text-gray-500'}`} style={index !== 0 ? { backgroundColor: isLightMode ? '#E5E7EB' : '#374151', color: theme.subText } : {}}>{index + 1}</span><span className="font-semibold text-sm md:text-base truncate" style={{ color: theme.text }}>{church.name}</span></div><span className="font-bold text-base md:text-lg shrink-0 pl-2" style={{ color: theme.text }}>{church.value}</span>
+                                <div key={index} className="flex items-center justify-between p-2 rounded-lg border transition-colors" style={{ backgroundColor: isLightMode ? '#F9FAFB' : 'rgba(255,255,255,0.02)', borderColor: theme.cardBorder }}>
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${index === 0 ? 'bg-yellow-500 text-black shadow-lg' : 'bg-gray-500/20 text-gray-500'}`}>{index + 1}</span>
+                                        <span className="font-bold text-[10px] truncate" style={{ color: theme.text }}>{church.name}</span>
+                                    </div>
+                                    <span className="font-black text-xs" style={{ color: theme.text }}>{church.value}</span>
                                 </div>
                             ))}
-                            {(data?.byChurch || []).length === 0 && <p className="text-center py-4 text-sm" style={{ color: theme.subText }}>Sem dados.</p>}
+                            {(data?.byChurch || []).length === 0 && <p className="text-center text-[10px] opacity-50 mt-4">Sem dados.</p>}
                         </div>
                     </div>
-                    <div className="border p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder, boxShadow: theme.shadow }}>
-                        <h3 className="font-bold mb-4 text-sm md:text-base" style={{ color: theme.subText }}>📢 Origem (Marketing)</h3>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%"><BarChart layout="vertical" data={data?.bySource || []} margin={{ left: 10, right: 10 }}><CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.cardBorder} /><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={90} tick={{ fill: theme.text, fontSize: 11 }} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} animationDuration={2000}>{(data?.bySource || []).map((index: number) => (<Cell key={`cell-${index}`} fill={COLORS_MARKETING[index % COLORS_MARKETING.length]} />))}</Bar></BarChart></ResponsiveContainer>
-                            {(data?.bySource || []).length === 0 && <p className="text-center text-sm mt-8 opacity-50">Sem dados.</p>}
+
+                    <div className="p-5 rounded-[1.5rem] border overflow-hidden flex flex-col" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                        <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Zap size={16} className="text-yellow-500" /> Raio-X Rápido</h3>
+                        <div className="flex-1 overflow-y-auto scrollbar-hide max-h-[400px]">
+                            {renderCheckpointsDetails()}
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     );
