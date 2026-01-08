@@ -89,7 +89,8 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         return (
             <div className="h-64 w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
+                    {/* Aumentei a margem esquerda para garantir que os números não cortem */}
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
@@ -149,7 +150,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     ];
     const handleExport = () => window.open(`${API_URL}/export`, '_blank');
 
-    // Layout Classes (Fixo como página normal)
+    // Layout Classes
     const containerClasses = "w-full min-h-screen relative";
     const stickyHeaderClasses = "sticky top-[60px] md:top-[70px] z-30 px-4 py-4 md:px-8 mt-[-1rem]";
 
@@ -166,9 +167,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <h1 className="text-xl md:text-2xl font-black tracking-tighter leading-none uppercase">Dashboard</h1>
                                 <p className="text-xs font-bold mt-1 opacity-60 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Dados Ao Vivo</p>
                             </div>
-                        </div>
-                        <div className="flex gap-2 md:hidden">
-                            {/* Mobile Header Actions (Vazio por enquanto, pois removemos o full screen) */}
                         </div>
                     </div>
 
@@ -202,7 +200,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         <div className="flex justify-between items-start"><span className="text-xs font-bold uppercase tracking-wider text-yellow-500 flex items-center gap-1"><Zap size={14} /> Pico</span></div>
                         <div>
                             <span className="text-3xl md:text-5xl font-black block" style={{ color: theme.text }}>{peakData.hour}</span>
-                            <span className="text-xs font-bold opacity-50 block mt-1">~{peakData.val} pessoas</span>
+                            <span className="text-xs font-bold opacity-50 block mt-1">{peakData.val} pessoas</span>
                         </div>
                         <div className="w-full h-1.5 bg-yellow-500/20 rounded-full mt-2"><div className="h-full bg-yellow-500 rounded-full" style={{ width: '70%' }}></div></div>
                     </div>
@@ -264,12 +262,13 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                             <h3 className="text-xs font-bold uppercase opacity-50 mb-3 flex items-center gap-1"><Smile size={12} /> Faixa Etária</h3>
                             <div className="h-24 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={ageData} layout="vertical" margin={{ left: -20, right: 10 }}>
+                                    {/* CORREÇÃO DO RECORTE (Age Data): Aumentei o width do YAxis de 60 para 70 e adicionei margin */}
+                                    <BarChart data={ageData} layout="vertical" margin={{ left: 0, right: 10 }}>
                                         <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" width={60} tick={{ fontSize: 11, fill: theme.text, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                        <YAxis dataKey="name" type="category" width={70} tick={{ fontSize: 11, fill: theme.text, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
                                         <Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} />
                                         <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
-                                            {ageData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}
+                                            {ageData.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index === 0 ? 'kids' : index === 1 ? 'youth' : 'adult']} />))}
                                         </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -278,7 +277,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                     </div>
                 </div>
 
-                {/* --- 3. MARKETING E IGREJAS (AGORA MAIORES) --- */}
+                {/* --- 3. MARKETING E IGREJAS --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* MARKETING GIGANTE */}
@@ -292,10 +291,11 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         </div>
                         <div className="h-[400px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart layout="vertical" data={data?.bySource || []} margin={{ left: 0, right: 20, top: 10, bottom: 10 }}>
+                                {/* CORREÇÃO DO RECORTE (Marketing): Aumentei o width do YAxis para 140 para caber nomes longos */}
+                                <BarChart layout="vertical" data={data?.bySource || []} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.gridColor} opacity={0.5} />
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={120} tick={{ fill: theme.text, fontSize: 13, fontWeight: 'bold' }} tickLine={false} axisLine={false} />
+                                    <YAxis dataKey="name" type="category" width={140} tick={{ fill: theme.text, fontSize: 13, fontWeight: 'bold' }} tickLine={false} axisLine={false} />
                                     <Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} />
                                     <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={32}>
                                         {(data?.bySource || []).map((_: any, index: number) => (
