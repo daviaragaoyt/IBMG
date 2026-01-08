@@ -162,7 +162,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                 <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fade-in-down">
                     <div className="flex items-center gap-4 w-full md:w-auto justify-between">
                         <div className="flex items-center gap-3">
-                            <Link to="/ekklesia" className="p-2.5 rounded-xl border active:scale-95 transition-all hover:bg-white/10" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}><ArrowLeft size={20} style={{ color: theme.text }} /></Link>
+                            <Link to="/ekklesia/admin" className="p-2.5 rounded-xl border active:scale-95 transition-all hover:bg-white/10" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}><ArrowLeft size={20} style={{ color: theme.text }} /></Link>
                             <div>
                                 <h1 className="text-xl md:text-2xl font-black tracking-tighter leading-none uppercase">Dashboard</h1>
                                 <p className="text-xs font-bold mt-1 opacity-60 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Dados Ao Vivo</p>
