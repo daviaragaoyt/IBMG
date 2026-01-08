@@ -3,7 +3,7 @@ import {
     AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    Users, ArrowLeft, RefreshCw, Baby, Crown, Download, Maximize, MapPin, Zap, TrendingUp, Briefcase, Smile, Share2
+    Users, ArrowLeft, RefreshCw, Baby, Crown, Download, MapPin, Zap, TrendingUp, Briefcase, Smile, Share2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -20,7 +20,6 @@ const COLORS_MARKETING = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
 export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [isFullScreen, setIsFullScreen] = useState(false);
 
     const today = new Date().getDate().toString();
     const [selectedDay, setSelectedDay] = useState(today);
@@ -28,7 +27,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     const eventDays = ['13', '14', '15', '16', '17'];
     const daysToShow = eventDays.includes(today) ? eventDays : [today, ...eventDays];
 
-    // --- TEMA OTIMIZADO ---
+    // --- TEMA ---
     const theme = isLightMode ? {
         bg: '#F3F4F6', text: '#1F2937', subText: '#4B5563', cardBg: '#FFFFFF', cardBorder: '#E5E7EB',
         shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', tooltipBg: '#FFFFFF', tooltipText: '#1F2937',
@@ -65,16 +64,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, []);
-
-    const toggleFullScreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch((e) => console.log(e));
-            setIsFullScreen(true);
-        } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-            setIsFullScreen(false);
-        }
-    };
 
     const getPeakHour = () => {
         if (!data?.timeline || !data.timeline[selectedDay]) return { hour: '--', val: 0 };
@@ -134,7 +123,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                             <span className="text-2xl font-black" style={{ color: theme.text }}>{stats.total}</span>
                         </div>
 
-                        {/* Barra de Progresso Visível */}
                         <div className="w-full h-3 rounded-full bg-gray-500/10 overflow-hidden flex">
                             <div style={{ width: `${(stats.type?.VISITOR / stats.total) * 100 || 0}%`, background: COLORS.visitor }}></div>
                             <div style={{ width: `${(stats.type?.MEMBER / stats.total) * 100 || 0}%`, background: COLORS.member }}></div>
@@ -161,14 +149,9 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     ];
     const handleExport = () => window.open(`${API_URL}/export`, '_blank');
 
-    // Layout Classes
-    const containerClasses = isFullScreen
-        ? "fixed inset-0 w-screen h-screen z-50 overflow-y-auto"
-        : "w-full min-h-screen relative";
-
-    const stickyHeaderClasses = isFullScreen
-        ? "sticky top-0 z-40 px-4 py-4 md:px-8"
-        : "sticky top-[60px] md:top-[70px] z-30 px-4 py-4 md:px-8 mt-[-1rem]";
+    // Layout Classes (Fixo como página normal)
+    const containerClasses = "w-full min-h-screen relative";
+    const stickyHeaderClasses = "sticky top-[60px] md:top-[70px] z-30 px-4 py-4 md:px-8 mt-[-1rem]";
 
     return (
         <div className={`${containerClasses} font-sans transition-colors duration-500 pb-20 scrollbar-hide`} style={{ backgroundColor: theme.bg, color: theme.text }}>
@@ -184,9 +167,8 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <p className="text-xs font-bold mt-1 opacity-60 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Dados Ao Vivo</p>
                             </div>
                         </div>
-                        {/* Mobile Actions */}
                         <div className="flex gap-2 md:hidden">
-                            <button onClick={toggleFullScreen} className="p-2.5 rounded-xl border bg-blue-500/10 text-blue-500 border-blue-500/20"><Maximize size={20} /></button>
+                            {/* Mobile Header Actions (Vazio por enquanto, pois removemos o full screen) */}
                         </div>
                     </div>
 
@@ -199,7 +181,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                 ))}
                             </div>
                             <button onClick={handleExport} className="hidden md:flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-green-600/20"><Download size={18} /><span>Excel</span></button>
-                            <button onClick={toggleFullScreen} className="hidden md:flex p-3 rounded-xl border hover:bg-white/5 transition-all text-blue-500 border-blue-500/20" style={{ borderColor: theme.cardBorder }}><Maximize size={20} /></button>
                         </div>
                     </div>
                 </div>
@@ -309,18 +290,15 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <p className="text-xs opacity-50 font-bold mt-1">Como os visitantes conheceram?</p>
                             </div>
                         </div>
-                        {/* Aumentei a altura para 400px para ficar bem espaçado */}
                         <div className="h-[400px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart layout="vertical" data={data?.bySource || []} margin={{ left: 0, right: 20, top: 10, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.gridColor} opacity={0.5} />
                                     <XAxis type="number" hide />
-                                    {/* Letra do eixo Y bem maior (13px) e com mais espaço (width 120) */}
                                     <YAxis dataKey="name" type="category" width={120} tick={{ fill: theme.text, fontSize: 13, fontWeight: 'bold' }} tickLine={false} axisLine={false} />
                                     <Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} />
-                                    {/* Barras mais grossas (barSize 32) */}
                                     <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={32}>
-                                        {(data?.bySource || []).map((entry: any, index: number) => (
+                                        {(data?.bySource || []).map((_: any, index: number) => (
                                             <Cell key={`cell-${index}`} fill={COLORS_MARKETING[index % COLORS_MARKETING.length]} />
                                         ))}
                                     </Bar>
