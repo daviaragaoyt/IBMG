@@ -378,13 +378,34 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
 
                         {/* --- MARKETING NO CONTADOR (SÓ NA ENTRADA) --- */}
                         {isCurrentSpotEntrance() && (
-                            <div className="animate-fade-in">
-                                <label className="text-xs font-bold uppercase opacity-50 ml-1 mb-2 block flex items-center gap-1"><Megaphone size={12} /> Como conheceu? (Para Visitantes)</label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    {['Instagram', 'WhatsApp', 'Amigo/Convite', 'Faixa / Rua', 'Pastor / Líder', 'Youtube / Tiktok', 'Google / Site', 'Outros'].map(src => (
-                                        <button key={src} onClick={() => setCounterSource(src)}
-                                            className={`px-2 py-2 rounded-lg text-[10px] font-bold border transition-all truncate
-                                            ${counterSource === src ? 'bg-blue-500 border-blue-500 text-white' : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+                            <div className="animate-fade-in mt-2">
+                                <label className="text-xs font-bold uppercase opacity-60 ml-1 mb-3 block flex items-center gap-2">
+                                    <Megaphone size={14} className="text-orange-500" />
+                                    Como conheceu? (Para Visitantes)
+                                </label>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {[
+                                        'Instagram',
+                                        'WhatsApp',
+                                        'Amigo/Convite',
+                                        'Faixa / Rua',
+                                        'Pastor / Líder',
+                                        'Youtube / Tiktok',
+                                        'Google / Site',
+                                        'Outros'
+                                    ].map(src => (
+                                        <button
+                                            key={src}
+                                            onClick={() => setCounterSource(src)}
+                                            className={`
+                        h-20 px-2 rounded-2xl border-2 font-black text-xs md:text-sm 
+                        flex flex-col items-center justify-center text-center transition-all active:scale-95 shadow-sm
+                        ${counterSource === src
+                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/30 shadow-lg scale-[1.02]'
+                                                    : 'bg-white border-gray-100 text-gray-400 hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50'}
+                    `}
+                                        >
                                             {src}
                                         </button>
                                     ))}
