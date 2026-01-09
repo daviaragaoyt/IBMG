@@ -259,8 +259,8 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
             return { name: `Dia ${day}`, total: dayTotal };
         });
 
-        // Cálculo da Média de Pessoas por Hora (Baseado no total)
-        const hoursOpen = 5; // Assumindo evento de 5 horas
+
+        const hoursOpen = 5;
         const avgPerHour = Math.round(todayTotal / (hoursOpen || 1));
 
         return (
@@ -375,7 +375,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         <div className="flex gap-2 min-w-max border-l pl-4 border-gray-500/10">
                             <div className="flex bg-gray-500/5 p-1.5 rounded-xl border" style={{ borderColor: theme.cardBorder }}>
                                 {daysToShow.map(day => (
-                                    <button key={day} onClick={() => setSelectedDay(day)} className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${selectedDay === day ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:bg-white/10'}`}>{day === today ? 'HJ' : `13`}</button>
+                                    <button key={day} onClick={() => setSelectedDay(day)} className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${selectedDay === day ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:bg-white/10'}`}>{day === today ? 'HJ' : day}</button>
                                 ))}
                             </div>
                             <button onClick={handleExport} className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold text-xs hover:brightness-110 transition-all shadow-lg"><Download size={14} /><span>Excel</span></button>
