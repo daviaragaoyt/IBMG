@@ -4,7 +4,7 @@ import {
     Line, Legend, ComposedChart
 } from 'recharts';
 import {
-    Users, ArrowLeft, RefreshCw, Baby, Crown, MapPin, Zap, TrendingUp, Briefcase, Smile, Share2, CalendarDays, BarChart2, Activity, Megaphone, ArrowUpRight
+    Users, ArrowLeft, RefreshCw, Crown, MapPin, Zap, TrendingUp, Briefcase, Smile, Share2, CalendarDays, BarChart2, Activity, Megaphone, ArrowUpRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -140,7 +140,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                 {nome === MAIN_ENTRANCE_NAME ? <Crown size={14} className="text-yellow-500" /> : <MapPin size={14} />}
                                 <span className="truncate">{nome}</span>
                             </h4>
-                            <span className="text-xl font-black" style={{ color: '#333' }}>{stats.total}</span>
+                            <span className="text-xl font-black" style={{ color: theme.text }}>{stats.total}</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-gray-500/10 overflow-hidden flex">
                             <div style={{ width: `${(stats.type?.VISITOR / stats.total) * 100 || 0}%`, background: COLORS.visitor }}></div>
@@ -158,13 +158,8 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
 
     // === ANALYTICS VIEW RENDERER (NOVO) ===
     const renderAnalyticsDashboard = () => {
-        // Dados de Evolução Diária (Total vs Visitantes)
         const evolutionData = eventDays.map(day => {
-            // Aqui precisaria de uma lógica no backend para pegar o total de visitantes por dia
-            // Como estamos simulando com os dados atuais, vamos usar uma estimativa baseada na % geral se não tiver o dado exato
             const dayTotal = data?.checkpointsData?.[day]?.[MAIN_ENTRANCE_NAME]?.total || 0;
-            // Para demo: Simulando variação. Na real, o backend deve enviar 'byType' agrupado por dia.
-            // Se não tiver, usamos o total do dia.
             return {
                 name: `Dia ${day}`,
                 total: dayTotal,
@@ -172,7 +167,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
             };
         });
 
-        // Top Marketing
         const topSource = data?.bySource?.[0] || { name: 'Sem dados', value: 0 };
 
         return (
@@ -261,7 +255,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                     <div key={index} className="flex justify-between items-center text-xs font-bold p-2 rounded-lg bg-gray-50 border border-gray-100">
                                         <div className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS_MARKETING[index % COLORS_MARKETING.length] }}></div>
-                                            <span className="truncate max-w-[100px]" style={{ color: '#333' }}>{source.name}</span>
+                                            <span className="truncate max-w-[100px]" style={{ color: theme.text }}>{source.name}</span>
                                         </div>
                                         <span style={{ color: theme.text }}>{source.value}</span>
                                     </div>
@@ -270,7 +264,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         </div>
                     </div>
 
-                    {/* 4. PERFIL (IDADE) - RADIAL OU BARRAS HORIZONTAIS */}
+                    {/* 4. PERFIL (IDADE) */}
                     <div className="p-6 rounded-[2rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
                         <h3 className="font-bold text-base mb-6 flex items-center gap-2"><Users size={18} className="text-green-500" /> Perfil do Público</h3>
                         <div className="h-64 w-full">
@@ -347,27 +341,38 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
             <div className="p-3 md:p-8 max-w-[1400px] mx-auto space-y-4 md:space-y-8">
                 {viewMode === 'LIVE' ? (
                     <div className="animate-fade-in space-y-4 md:space-y-6">
-                        {/* BIG NUMBERS LIVE */}
+                        {/* BIG NUMBERS LIVE (ATUALIZADO SEM O CARD KIDS) */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+
+                            {/* Card 1: Total do Dia */}
                             <div className="col-span-2 lg:col-span-1 p-5 rounded-[1.5rem] relative overflow-hidden flex flex-col justify-center border h-28 md:h-40 shadow-lg" style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)', borderColor: 'transparent' }}>
                                 <div className="absolute right-[-10px] top-[-10px] opacity-20 text-white"><Crown size={80} /></div>
                                 <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest mb-1 flex items-center gap-1"><Users size={10} /> Público Hoje</span>
                                 <span className="text-4xl md:text-7xl font-black text-white leading-none">{todayTotal}</span>
                                 <span className="text-[9px] text-white/60 font-medium mt-1">*Só Recepção</span>
                             </div>
+
+                            {/* Card 2: Acumulado */}
                             <div className="col-span-1 p-4 rounded-[1.5rem] border flex flex-col justify-between h-28 md:h-40" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1"><CalendarDays size={10} /> Total</span>
                                 <div><span className="text-2xl md:text-5xl font-black block" style={{ color: theme.text }}>{accumulatedTotal}</span><span className="text-[9px] font-bold opacity-50">Geral</span></div>
                                 <div className="w-full h-1 bg-purple-500/20 rounded-full"><div className="h-full bg-purple-500 rounded-full w-full"></div></div>
                             </div>
+
+                            {/* Card 3: VISITANTES HOJE (Novo, substituiu o Kids) */}
                             <div className="col-span-1 p-4 rounded-[1.5rem] border flex flex-col justify-between h-28 md:h-40" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-green-500 flex items-center gap-1"><Baby size={10} /> Kids</span>
-                                <span className="text-2xl md:text-5xl font-black" style={{ color: theme.text }}>{data?.checkpointsData?.[selectedDay]?.["Salinha Kids"]?.total || 0}</span>
-                                <div className="w-full h-1 bg-green-500/20 rounded-full"><div className="h-full bg-green-500 rounded-full w-full"></div></div>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 flex items-center gap-1"><Smile size={10} /> Visitantes</span>
+                                <span className="text-2xl md:text-5xl font-black" style={{ color: theme.text }}>{data?.byType?.VISITOR || 0}</span>
+                                <div className="w-full h-1 bg-orange-500/20 rounded-full"><div className="h-full bg-orange-500 rounded-full w-full"></div></div>
                             </div>
-                            <div className="col-span-2 lg:col-span-1 p-4 rounded-[1.5rem] border flex flex-col justify-center gap-3 h-auto min-h-[110px]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <div><div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-orange-500 uppercase">Visitantes</span><span className="text-xs font-black">{data?.byType?.VISITOR || 0}</span></div><div className="w-full h-1.5 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${(data?.byType?.VISITOR / (data?.total || 1)) * 100}%` }}></div></div></div>
-                                <div><div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-purple-500 uppercase">Membros</span><span className="text-xs font-black">{data?.byType?.MEMBER || 0}</span></div><div className="w-full h-1.5 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-purple-500" style={{ width: `${(data?.byType?.MEMBER / (data?.total || 1)) * 100}%` }}></div></div></div>
+
+                            {/* Card 4: MEMBROS HOJE (Novo, substituiu o Kids) */}
+                            <div className="col-span-2 lg:col-span-1 p-4 rounded-[1.5rem] border flex flex-col justify-between h-28 md:h-40" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1"><Briefcase size={10} /> Membros Hoje</span>
+                                </div>
+                                <span className="text-2xl md:text-5xl font-black" style={{ color: theme.text }}>{data?.byType?.MEMBER || 0}</span>
+                                <div className="w-full h-1.5 rounded-full bg-purple-500/20 overflow-hidden"><div className="h-full bg-purple-500" style={{ width: '100%' }}></div></div>
                             </div>
                         </div>
 
@@ -393,7 +398,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         {/* Marketing e Igrejas LIVE */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
                             <div className="p-5 rounded-[1.5rem] border" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <div className="flex items-center gap-2 mb-4"><div className="p-1.5 rounded-lg bg-pink-500/10"><Share2 size={16} className="text-pink-500" /></div><h3 className="font-bold text-sm">Origem</h3></div>
+                                <div className="flex items-center gap-2 mb-4"><div className="p-1.5 rounded-lg bg-pink-500/10"><Share2 size={16} className="text-pink-500" /></div><h3 className="font-bold text-sm">Origem (Marketing)</h3></div>
                                 <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart layout="vertical" data={data?.bySource || []} margin={{ left: -10, right: 10 }}><CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.gridColor} opacity={0.5} /><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={90} tick={{ fill: theme.text, fontSize: 10, fontWeight: 'bold' }} tickLine={false} axisLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>{(data?.bySource || []).map((_: any, index: number) => (<Cell key={`cell-${index}`} fill={COLORS_MARKETING[index % COLORS_MARKETING.length]} />))}</Bar></BarChart></ResponsiveContainer></div>
                             </div>
                             <div className="flex flex-col gap-3">

@@ -4,7 +4,7 @@ import {
     CheckCircle2, XCircle, QrCode, MapPin, ArrowLeft,
     Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck, LayoutDashboard,
     FileWarning, Save, AlertTriangle, Search, RefreshCw, Megaphone,
-    Instagram, MessageCircle, UserPlus, Mic2, Globe
+    Instagram, MessageCircle, UserPlus, Mic2, Globe,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,10 +15,7 @@ const MARKETING_OPTIONS = [
     { label: 'Amigo/Convite', icon: <UserPlus size={28} /> },
     { label: 'Faixa / Rua', icon: <MapPin size={28} /> },
     { label: 'Pastor / Líder', icon: <Mic2 size={28} /> },
-
-    // MUDANÇA AQUI: De "Youtube" para "Aviso Culto"
-    { label: 'Aviso Culto / Igreja', icon: <Megaphone size={28} /> },
-
+    { label: 'Aviso Culto / Igreja', icon: <Megaphone size={28} /> }, // Opção útil para membros
     { label: 'Google / Site', icon: <Globe size={28} /> },
     { label: 'Outros', icon: <Search size={28} /> }
 ];
@@ -228,8 +225,8 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                     ageGroup: selectedAgeGroup,
                     gender: selectedGender,
                     quantity: 1,
-                    // Envia a origem apenas se for visitante e estiver na entrada
-                    marketingSource: (type === 'VISITOR' && isEntrance) ? counterSource : null
+                    // AGORA ENVIA A ORIGEM TAMBÉM PARA MEMBROS (SE ESTIVER SELECIONADA E FOR ENTRADA)
+                    marketingSource: (isEntrance && counterSource) ? counterSource : null
                 })
             });
             if (res.ok) {
@@ -341,12 +338,12 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* --- MARKETING NO CONTADOR (SÓ NA ENTRADA) - ATUALIZADO --- */}
+                        {/* --- MARKETING (PARA TODOS AGORA) --- */}
                         {isCurrentSpotEntrance() && (
                             <div className="animate-fade-in mt-2">
                                 <label className="text-xs font-bold uppercase opacity-60 ml-1 mb-3 block flex items-center gap-2">
                                     <Megaphone size={14} className="text-orange-500" />
-                                    Como conheceu? (Para Visitantes)
+                                    Como conheceu?
                                 </label>
 
                                 <div className="grid grid-cols-2 gap-3">
@@ -478,7 +475,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                 <div><label className="text-xs font-bold text-gray-400 ml-1">Gênero</label><div className="flex gap-2">{['M', 'F'].map(g => (<button key={g} onClick={() => setEditGender(g)} className={`flex-1 py-3 rounded-xl font-black text-sm border ${editGender === g ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-50 text-gray-400'}`}>{g === 'M' ? 'HOMEM' : 'MULHER'}</button>))}</div></div>
                             )}
                             {!personToUpdate.marketingSource && (
-                                <div><label className="text-xs font-bold text-gray-400 ml-1">Como conheceu?</label><select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500"><option value="" className="text-gray-900 bg-white">Selecione...</option><option value="Instagram" className="text-gray-900 bg-white">Instagram</option><option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option><option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option><option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option><option value="Aviso Culto / Igreja" className="text-gray-900 bg-white">Aviso Culto / Igreja</option><option value="Google / Site" className="text-gray-900 bg-white">Google / Site</option><option value="Outros" className="text-gray-900 bg-white">Outros</option></select></div>
+                                <div><label className="text-xs font-bold text-gray-400 ml-1">Como conheceu?</label><select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500"><option value="" className="text-gray-900 bg-white">Selecione...</option><option value="Instagram" className="text-gray-900 bg-white">Instagram</option><option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option><option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option><option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option><option value="Outros" className="text-gray-900 bg-white">Outros</option></select></div>
                             )}
                             {!personToUpdate.age && (
                                 <div><label className="text-xs font-bold text-gray-400 ml-1">Idade</label><input type="number" value={editAge} onChange={e => setEditAge(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50 font-bold text-gray-800 outline-none focus:border-purple-500" placeholder="Ex: 25" /></div>
