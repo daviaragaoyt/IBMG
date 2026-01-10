@@ -4,7 +4,7 @@ import {
     CheckCircle2, XCircle, QrCode, MapPin, ArrowLeft,
     Users, MousePointerClick, Plus, LogOut, ChevronDown, Lock, Baby, User, UserCheck, LayoutDashboard,
     FileWarning, Save, AlertTriangle, Search, RefreshCw, Megaphone,
-    Instagram, MessageCircle, UserPlus, Mic2, Globe,
+    Instagram, MessageCircle, UserPlus, Mic2, Globe
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,7 +15,7 @@ const MARKETING_OPTIONS = [
     { label: 'Amigo/Convite', icon: <UserPlus size={28} /> },
     { label: 'Faixa / Rua', icon: <MapPin size={28} /> },
     { label: 'Pastor / Líder', icon: <Mic2 size={28} /> },
-    // NOVA OPÇÃO PARA MEMBROS
+    // MUDANÇA CONFIRMADA: "Aviso Culto" em vez de Youtube
     { label: 'Aviso Culto / Igreja', icon: <Megaphone size={28} /> },
     { label: 'Google / Site', icon: <Globe size={28} /> },
     { label: 'Outros', icon: <Search size={28} /> }
@@ -107,7 +107,6 @@ const StaffLogin = ({ onLogin, isLightMode }: { onLogin: (user: any) => void, is
     );
 };
 
-// ESTE É O EXPORT QUE O APP.TSX ESTÁ PROCURANDO
 export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     const [staffUser, setStaffUser] = useState<any>(() => {
         const saved = localStorage.getItem('ekklesia_staff_user');
@@ -248,15 +247,26 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 body: JSON.stringify({ personId: id, checkpointId: selectedSpot })
             });
             const data = await res.json();
+
+            // CORREÇÃO: Trata tanto SUCESSO quanto REENTRADA corretamente
             if (data.status === 'SUCCESS' || data.status === 'REENTRY') {
                 const p = data.person;
+
+                // Se faltar dados, abre modal para completar
                 if (!p.gender || !p.marketingSource || !p.age) {
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                     setPersonToUpdate(p); setEditAge(p.age || ''); setEditPhone(p.phone || ''); setEditGender(p.gender || ''); setEditSource(p.marketingSource || '');
                     setShowUpdateModal(true);
-                } else { addToast(data.message, 'success'); }
-            } else { addToast("Erro desconhecido", 'error'); }
+                } else {
+                    // Se estiver completo, mostra mensagem (Verde se sucesso, Amarelo/Vermelho se reentrada)
+                    const type = data.status === 'REENTRY' ? 'error' : 'success'; // Usando 'error' visualmente para chamar atenção na reentrada
+                    addToast(data.message, type);
+                }
+            } else {
+                addToast("Erro desconhecido", 'error');
+            }
         } catch (err) { addToast("Erro de conexão", 'error'); }
+
         if (!showUpdateModal) setTimeout(() => { if (!showUpdateModal) setPauseScan(false); }, 2500);
     };
 
@@ -340,7 +350,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                             </div>
                         </div>
 
-                        {/* --- MARKETING: "PARA VISITANTES" REMOVIDO --- */}
+                        {/* --- MARKETING (SÓ NA ENTRADA) --- */}
                         {isCurrentSpotEntrance() && (
                             <div className="animate-fade-in mt-2">
                                 <label className="text-xs font-bold uppercase opacity-60 ml-1 mb-3 block flex items-center gap-2">
@@ -445,7 +455,14 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                                         <input type="text" placeholder="WhatsApp" value={editPhone} onChange={e => setEditPhone(formatPhone(e.target.value))} maxLength={15} className="w-full p-2 rounded border text-black font-bold" />
                                         <select value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full p-2 rounded border text-black font-bold text-sm bg-white">
                                             <option value="" className="text-gray-900 bg-white">Origem?</option>
-                                            <option value="Instagram" className="text-gray-900 bg-white">Instagram</option><option value="WhatsApp" className="text-gray-900 bg-white">WhatsApp</option><option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option><option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option><option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option><option value="Aviso Culto / Igreja" className="text-gray-900 bg-white">Aviso Culto / Igreja</option><option value="Google / Site" className="text-gray-900 bg-white">Google/Site</option><option value="Outros" className="text-gray-900 bg-white">Outros</option>
+                                            <option value="Instagram" className="text-gray-900 bg-white">Instagram</option>
+                                            <option value="WhatsApp" className="text-gray-900 bg-white">WhatsApp</option>
+                                            <option value="Amigo/Convite" className="text-gray-900 bg-white">Amigo/Convite</option>
+                                            <option value="Faixa / Rua" className="text-gray-900 bg-white">Faixa / Rua</option>
+                                            <option value="Pastor / Líder" className="text-gray-900 bg-white">Pastor / Líder</option>
+                                            <option value="Aviso Culto / Igreja" className="text-gray-900 bg-white">Aviso Culto / Igreja</option>
+                                            <option value="Google / Site" className="text-gray-900 bg-white">Google/Site</option>
+                                            <option value="Outros" className="text-gray-900 bg-white">Outros</option>
                                         </select>
                                         <button onClick={() => saveEdit(p.id)} className="w-full py-3 bg-green-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 mt-1"><Save size={16} /> SALVAR</button>
                                     </div>

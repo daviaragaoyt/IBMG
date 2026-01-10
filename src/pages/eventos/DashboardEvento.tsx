@@ -4,7 +4,7 @@ import {
     Line, Legend, ComposedChart
 } from 'recharts';
 import {
-    Users, ArrowLeft, RefreshCw, Crown, MapPin, Zap, TrendingUp, Briefcase, Share2, CalendarDays, BarChart2, Activity, Clock,
+    Users, ArrowLeft, RefreshCw, Crown, MapPin, Zap, TrendingUp, Briefcase, Share2, CalendarDays, BarChart2, Activity, Baby, Clock,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -228,7 +228,6 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
 
     const handleExport = () => window.open(`${API_URL}/export`, '_blank');
     console.log(handleExport)
-
     return (
         <div className="w-full min-h-screen relative font-sans transition-colors duration-500 pb-24 scrollbar-hide selection:bg-purple-500 selection:text-white" style={{ backgroundColor: theme.bg, color: theme.text }}>
 
@@ -267,7 +266,11 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                             <div><span className="text-3xl md:text-6xl font-black block tracking-tighter" style={{ color: theme.text }}>{accumulatedTotal}</span><span className="text-[10px] font-bold opacity-50">Inscritos Gerais</span></div>
                             <div className="w-full h-1.5 bg-purple-500/20 rounded-full"><div className="h-full bg-purple-500 rounded-full w-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div></div>
                         </div>
-
+                        <div className="col-span-1 p-6 rounded-[2rem] border flex flex-col justify-between h-36 md:h-48 shadow-lg bg-gradient-to-br from-transparent to-green-500/5 transition-transform hover:scale-[1.02]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-green-500 flex items-center gap-1.5"><Baby size={12} /> Kids {viewMode === 'LIVE' ? 'Hoje' : 'Total'}</span>
+                            <span className="text-3xl md:text-6xl font-black tracking-tighter" style={{ color: theme.text }}>{currentViewStats.kidsTotal}</span>
+                            <div className="w-full h-1.5 bg-green-500/20 rounded-full"><div className="h-full bg-green-500 rounded-full w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div></div>
+                        </div>
                         <div className="col-span-2 lg:col-span-1 p-6 rounded-[2rem] border flex flex-col justify-center gap-4 h-36 md:h-48 shadow-lg bg-gradient-to-br from-transparent to-blue-500/5 transition-transform hover:scale-[1.02]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
                             <div><div className="flex justify-between mb-1"><span className="text-[10px] font-bold text-orange-500 uppercase">Visitantes</span><span className="text-xs font-black">{currentViewStats.visitors}</span></div><div className="w-full h-2 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${(currentViewStats.visitors / (currentViewStats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                             <div><div className="flex justify-between mb-1"><span className="text-[10px] font-bold text-purple-500 uppercase">Membros</span><span className="text-xs font-black">{currentViewStats.members}</span></div><div className="w-full h-2 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-purple-500" style={{ width: `${(currentViewStats.members / (currentViewStats.totalEntrance || 1)) * 100}%` }}></div></div></div>
