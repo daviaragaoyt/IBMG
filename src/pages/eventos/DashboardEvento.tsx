@@ -1,56 +1,96 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
     AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    Line, Legend, ComposedChart
+    Line, ComposedChart
 } from 'recharts';
 import {
-    Users, ArrowLeft, RefreshCw, Crown, MapPin, Zap, TrendingUp, Briefcase, Share2, CalendarDays, BarChart2, Activity, Baby, Clock,
+    Users, ArrowLeft, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Share2, Activity, Baby, Clock, UserCheck, Target, Layers
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// --- CONFIGURAÇÃO VISUAL ---
 const COLORS = {
-    male: '#3B82F6', female: '#EC4899',
-    member: '#8B5CF6', visitor: '#F97316',
-    kids: '#10B981', youth: '#FACC15', adult: '#6366F1'
+    live: '#EF4444', male: '#3B82F6', female: '#EC4899', kids: '#10B981',
+    marketing: '#8B5CF6', visitor: '#F97316', member: '#8B5CF6',
+    youth: '#FACC15', adult: '#6366F1',
+    mkt: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB']
 };
-const COLORS_MARKETING = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'];
 
-const MAIN_ENTRANCE_NAME = "Recepção / Entrada";
+const getChartTheme = (isLight: boolean) => ({
+    text: isLight ? '#334155' : '#94a3b8',
+    grid: isLight ? '#e5e7eb' : '#2D0A3D',
+    tooltipBg: isLight ? '#ffffff' : '#1A0524',
+    tooltipBorder: isLight ? '#e2e8f0' : '#4c1d95',
+    color: isLight ? '#0f172a' : '#ffffff'
+});
+
+// --- TIPAGEM ---
+interface CheckpointData {
+    total: number;
+    visitor: number;
+    member: number;
+    name?: string;
+}
+
+interface StatsState {
+    totalEntrance: number;
+    kidsTotal: number;
+    visitors: number;
+    members: number;
+    gender: { M: number; F: number };
+    age: { CRIANCA: number; JOVEM: number; ADULTO: number };
+    marketing: Record<string, number>;
+    church: Record<string, number>;
+    checkpointsList: CheckpointData[];
+}
+
+// --- COMPONENTES VISUAIS (Internalizados) ---
+const Card = ({ children, className = "" }: any) => (
+    <div className={`
+        relative flex flex-col items-center justify-center p-6
+        rounded-[1.5rem] border shadow-sm transition-all duration-300
+        bg-white dark:bg-[#1A0524] 
+        border-slate-200 dark:border-[#2D0A3D]
+        text-slate-900 dark:text-white
+        ${className}
+    `}>
+        {children}
+    </div>
+);
+
+const CardTitle = ({ icon, title, color }: any) => (
+    <div className="flex items-center gap-2 mb-4 w-full justify-center opacity-90">
+        <div className={`p-1.5 rounded-lg text-${color}-600 bg-${color}-50 dark:bg-white/5 dark:text-${color}-400`}>{icon}</div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">{title}</h3>
+    </div>
+);
 
 export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'LIVE' | 'ANALYTICS'>('LIVE');
+    const [activeTab, setActiveTab] = useState<'LIVE' | 'PEOPLE' | 'MARKETING'>('LIVE');
 
+    // Pega o dia de hoje, ou define um padrão se não houver dados
     const today = new Date().getDate().toString();
     const [selectedDay, setSelectedDay] = useState(today);
 
-    const eventDays = ['13', '14', '15', '16', '17'];
-    const daysToShow = eventDays.includes(today) ? eventDays : [today, ...eventDays];
+    // 1. FORÇA O BACKGROUND DA PÁGINA INTEIRA
+    useEffect(() => {
+        const color = isLightMode ? '#F3F4F6' : '#0F0014';
+        document.body.style.backgroundColor = color;
+        return () => { document.body.style.backgroundColor = ''; };
+    }, [isLightMode]);
 
-    const theme = isLightMode ? {
-        bg: '#F3F4F6', text: '#1F2937', subText: '#6B7280', cardBg: '#FFFFFF', cardBorder: '#E5E7EB',
-        shadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        tooltipBg: 'rgba(255, 255, 255, 0.95)', tooltipText: '#1F2937', gridColor: '#E5E7EB'
-    } : {
-        bg: '#0F0014', text: '#FFFFFF', subText: '#9CA3AF', cardBg: '#1A0524', cardBorder: '#2D0A3D',
-        shadow: '0 0 40px rgba(0,0,0,0.5)', tooltipBg: 'rgba(26, 5, 36, 0.95)', tooltipText: '#FFFFFF', gridColor: '#2D0A3D'
-    };
-
-    const CustomTooltipStyle = {
-        backgroundColor: theme.tooltipBg, borderColor: theme.cardBorder, color: theme.tooltipText,
-        borderRadius: '12px', borderWidth: '1px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        fontSize: '12px', fontWeight: '600', padding: '12px', outline: 'none'
-    };
-
+    // 2. FETCH DATA
     const fetchData = async () => {
         try {
             const res = await fetch(`${API_URL}/dashboard`);
             const json = await res.json();
             setData(json);
-        } catch (error) { console.error("Erro ao buscar dados", error); }
+        }
+        catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -60,264 +100,324 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // --- MOTOR DE CÁLCULO ATUALIZADO (AGORA SOMA DETALHES DOS CHECKPOINTS) ---
-    const processData = (dataSet: any, isGeneral = false) => {
-        const stats = {
+    // 3. DIAS DISPONÍVEIS
+    const daysToShow = useMemo(() => {
+        const officialDays = ['11', '13', '14', '15', '16', '17'];
+        // Garante que o dia selecionado esteja na lista e ordena
+        return Array.from(new Set([today, ...officialDays])).sort((a, b) => parseInt(a) - parseInt(b));
+    }, [today]);
+
+    // 4. ENGINE DE DADOS (AGORA GLOBAL POR DIA)
+    const stats = useMemo<StatsState>(() => {
+        const s: StatsState = {
             totalEntrance: 0, kidsTotal: 0, visitors: 0, members: 0,
             gender: { M: 0, F: 0 }, age: { CRIANCA: 0, JOVEM: 0, ADULTO: 0 },
-            marketing: {} as Record<string, number>, church: {} as Record<string, number>,
-            // Adicionado: Lista detalhada para o Raio-X
-            checkpointsList: {} as Record<string, { total: number, visitor: number, member: number }>
+            marketing: {}, church: {}, checkpointsList: []
         };
 
-        if (!dataSet) return stats;
+        if (!data?.checkpointsData) return s;
 
-        const sumCheckpoint = (cpName: string, cpData: any) => {
-            const nameLower = cpName.toLowerCase();
-            const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção');
-            const isKids = nameLower.includes('kids') || nameLower.includes('criança');
+        const cpMap: Record<string, CheckpointData> = {};
 
-            if (isEntrance) stats.totalEntrance += (cpData.total || 0);
-            if (isKids) stats.kidsTotal += (cpData.total || 0);
+        const aggregate = (dataSet: any) => {
+            Object.entries(dataSet).forEach(([name, d]: [string, any]) => {
+                if (d.total !== undefined) {
+                    const nameLower = name.toLowerCase();
+                    const isKids = nameLower.includes('kids') || nameLower.includes('criança');
+                    const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção');
 
-            stats.visitors += cpData.type?.VISITOR || 0;
-            stats.members += cpData.type?.MEMBER || 0;
+                    if (isEntrance) s.totalEntrance += (d.total || 0);
+                    if (isKids) s.kidsTotal += (d.total || 0);
 
-            if (cpData.gender) { stats.gender.M += cpData.gender.M || 0; stats.gender.F += cpData.gender.F || 0; }
-            if (cpData.age) { stats.age.CRIANCA += cpData.age.CRIANCA || 0; stats.age.JOVEM += cpData.age.JOVEM || 0; stats.age.ADULTO += cpData.age.ADULTO || 0; }
+                    // Soma Geral
+                    s.visitors += d.type?.VISITOR || 0;
+                    s.members += d.type?.MEMBER || 0;
 
-            const mkt = cpData.marketingSource || cpData.source || cpData.marketing || cpData.bySource;
-            if (mkt) Object.entries(mkt).forEach(([k, v]) => { const key = (!k || k === 'null') ? 'Outros' : k; stats.marketing[key] = (stats.marketing[key] || 0) + (v as number); });
+                    // Demografia
+                    if (d.gender) { s.gender.M += d.gender.M || 0; s.gender.F += d.gender.F || 0; }
+                    if (d.age) { s.age.CRIANCA += d.age.CRIANCA || 0; s.age.JOVEM += d.age.JOVEM || 0; s.age.ADULTO += d.age.ADULTO || 0; }
 
-            const ch = cpData.church || cpData.churches || cpData.igreja || cpData.byChurch;
-            if (ch) Object.entries(ch).forEach(([k, v]) => { const key = (!k || k === 'null') ? 'Sem Igreja' : k; stats.church[key] = (stats.church[key] || 0) + (v as number); });
+                    // Listas
+                    const mkt = d.marketing || d.marketingSource;
+                    if (mkt) Object.entries(mkt).forEach(([k, v]) => s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number));
 
-            // SOMAR PARA O RAIO-X
-            if (!stats.checkpointsList[cpName]) {
-                stats.checkpointsList[cpName] = { total: 0, visitor: 0, member: 0 };
-            }
-            stats.checkpointsList[cpName].total += cpData.total || 0;
-            stats.checkpointsList[cpName].visitor += cpData.type?.VISITOR || 0;
-            stats.checkpointsList[cpName].member += cpData.type?.MEMBER || 0;
-        };
+                    const ch = d.church;
+                    if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
 
-        if (isGeneral) {
-            Object.values(dataSet).forEach((dayData: any) => Object.entries(dayData).forEach(([k, v]) => sumCheckpoint(k, v)));
-        } else {
-            Object.entries(dataSet).forEach(([k, v]) => sumCheckpoint(k, v));
-        }
+                    // Raio-X
+                    if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, name: name };
+                    cpMap[name].total += d.total || 0;
+                    cpMap[name].visitor += d.type?.VISITOR || 0;
+                    cpMap[name].member += d.type?.MEMBER || 0;
 
-        if (stats.totalEntrance === 0 && (stats.visitors + stats.members) > 0) stats.totalEntrance = stats.visitors + stats.members;
-        return stats;
-    };
-
-    // --- STATES CALCULADOS ---
-    const dailyStats = useMemo(() => processData(data?.checkpointsData?.[selectedDay] || {}, false), [data, selectedDay]);
-    const generalStats = useMemo(() => processData(data?.checkpointsData || {}, true), [data]);
-    const accumulatedTotal = generalStats.totalEntrance;
-
-    // --- DADOS DO PICO (AGORA CALCULA O RECORDE GERAL TAMBÉM) ---
-    const getPeakHour = () => {
-        if (!data?.timeline) return { text: '--', val: 0 };
-
-        if (viewMode === 'LIVE') {
-            if (!data.timeline[selectedDay]) return { text: '--', val: 0 };
-            const sorted = Object.entries(data.timeline[selectedDay]).sort((a: any, b: any) => (Number(b[1]) || 0) - (Number(a[1]) || 0));
-            return sorted.length === 0 ? { text: '--', val: 0 } : { text: `${sorted[0][0]}h`, val: Number(sorted[0][1]) || 0 };
-        } else {
-            // No modo Geral, acha o maior pico de todos os dias
-            let maxVal = 0;
-            let maxText = '--';
-            Object.entries(data.timeline).forEach(([day, hours]: any) => {
-                Object.entries(hours).forEach(([h, val]: any) => {
-                    if (val > maxVal) {
-                        maxVal = val;
-                        maxText = `Dia ${day} às ${h}h`;
-                    }
-                });
+                } else {
+                    aggregate(d);
+                }
             });
-            return { text: maxText, val: maxVal };
+        };
+
+        // --- MUDANÇA PRINCIPAL: APLICA O FILTRO DE DATA PARA TODAS AS ABAS ---
+        if (data.checkpointsData[selectedDay]) {
+            aggregate(data.checkpointsData[selectedDay]);
         }
-    };
-    const peakData = getPeakHour();
+        // Se quiser ver "Todos os Dias" no futuro, criar lógica aqui
+        // ---------------------------------------------------------------------
 
-    // --- PREPARAÇÃO PARA RENDERIZAÇÃO ---
-    const currentViewStats = viewMode === 'LIVE' ? dailyStats : generalStats;
+        s.checkpointsList = Object.values(cpMap).sort((a, b) => b.total - a.total);
 
-    const genderData = [{ name: 'Homens', value: currentViewStats.gender.M }, { name: 'Mulheres', value: currentViewStats.gender.F }];
+        // Fallback de segurança visual (se recepção falhar, usa soma total)
+        if (s.totalEntrance === 0 && (s.visitors + s.members) > 0) {
+            s.totalEntrance = s.visitors + s.members;
+        }
+
+        return s;
+    }, [data, selectedDay]); // Depende apenas do dia selecionado e dos dados
+
+    // PREPARAÇÃO VISUAL
+    const chartTheme = getChartTheme(isLightMode);
+
+    // Gráfico Horário (Timeline do dia selecionado)
+    const hourlyData = data?.timeline?.[selectedDay] ? Object.keys(data.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(h => ({ name: `${h}h`, value: data.timeline[selectedDay][h] })) : [];
+
+    const peakData = useMemo(() => {
+        if (!data?.timeline?.[selectedDay]) return { hour: '--', val: 0 };
+        const entries = Object.entries(data.timeline[selectedDay]) as [string, number][];
+        const sorted = entries.sort((a, b) => b[1] - a[1]);
+        return sorted.length ? { hour: `${sorted[0][0]}h`, val: Number(sorted[0][1]) } : { hour: '--', val: 0 };
+    }, [data, selectedDay]);
+
+    const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
+    const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
+
+    const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
     const ageData = [
-        { name: 'Crianças', value: currentViewStats.age.CRIANCA, fill: COLORS.kids },
-        { name: 'Jovens', value: currentViewStats.age.JOVEM, fill: COLORS.youth },
-        { name: 'Adultos', value: currentViewStats.age.ADULTO, fill: COLORS.adult },
+        { name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids },
+        { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' },
+        { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }
     ];
-    const marketingData = Object.entries(currentViewStats.marketing).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    const churchData = Object.entries(currentViewStats.church).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    const checkpointsList = Object.entries(currentViewStats.checkpointsList).sort((a, b) => b[1].total - a[1].total);
 
-    // --- RENDERIZADORES ---
-    const renderHourlyChart = () => {
-        if (!data?.timeline || !data.timeline[selectedDay]) return <div className="h-96 flex items-center justify-center opacity-50 text-sm font-medium">Aguardando dados...</div>;
-        const chartData = Object.keys(data.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(hour => ({ name: `${hour}:00`, value: data.timeline[selectedDay][hour] }));
-        return (
-            <div className="h-80 md:h-[400px] w-full mt-4 -ml-2">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
-                        <defs><linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.6} /><stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.gridColor} opacity={0.2} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 11, fontWeight: 500 }} minTickGap={30} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 11 }} width={30} />
-                        <Tooltip contentStyle={CustomTooltipStyle} />
-                        <Area type="monotone" dataKey="value" stroke="#8B5CF6" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" activeDot={{ r: 6, stroke: theme.cardBg, strokeWidth: 2 }} />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        );
-    };
+    // O Acumulado Total ainda considera a soma deste dia (stats.totalEntrance)
+    // Se quiser o acumulado GLOBAL (todos os dias), usaríamos outra lógica, 
+    // mas aqui mostraremos o Total do Dia Selecionado para manter coerência.
+    const accumulatedTotal = stats.totalEntrance;
 
-    const renderEvolutionChart = () => {
-        const evolutionData = eventDays.map(day => {
-            const stats = processData(data?.checkpointsData?.[day] || {}, false);
-            return { name: `Dia ${day}`, total: stats.totalEntrance, visitantes: stats.visitors };
-        });
-        return (
-            <div className="h-80 md:h-[400px] w-full mt-4 -ml-2">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={evolutionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                        <defs><linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} /><stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.2} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.gridColor} opacity={0.3} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 12, fontWeight: 'bold' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.subText, fontSize: 12 }} />
-                        <Tooltip contentStyle={CustomTooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 'bold', paddingTop: '20px' }} iconType="circle" />
-                        <Bar dataKey="total" name="Total Geral" barSize={60} fill="url(#colorTotal)" radius={[8, 8, 0, 0]} />
-                        <Line type="monotone" dataKey="visitantes" name="Visitantes" stroke="#F97316" strokeWidth={4} dot={{ r: 6, strokeWidth: 2, fill: theme.cardBg }} activeDot={{ r: 8 }} />
-                    </ComposedChart>
-                </ResponsiveContainer>
-            </div>
-        );
-    };
+    // Gráfico de Evolução (Mantém todos os dias para contexto histórico)
+    const evolutionData = ['13', '14', '15', '16', '17'].map(day => {
+        let total = 0; let vis = 0;
+        if (data?.checkpointsData?.[day]) {
+            // Soma manual aqui pois não depende do stats filtrado
+            const checkData = data.checkpointsData[day];
+            const aggr = (obj: any) => {
+                Object.values(obj).forEach((val: any) => {
+                    if (val.total !== undefined) {
+                        total += val.total || 0;
+                        vis += val.type?.VISITOR || 0;
+                    } else {
+                        aggr(val);
+                    }
+                })
+            };
+            aggr(checkData);
+        }
+        return { name: `Dia ${day}`, total, visitantes: vis };
+    });
 
-    const renderCheckpointsDetails = () => {
-        if (checkpointsList.length === 0) return <p className="text-center opacity-50 py-10 text-sm">Sem dados.</p>;
-        return (
-            <div className="flex flex-col gap-4">
-                {checkpointsList.map(([nome, stats]) => (
-                    <div key={nome} className="p-5 rounded-2xl border transition-all hover:translate-x-1" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                        <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold text-sm uppercase tracking-wide flex items-center gap-2 text-purple-500 w-[70%]">
-                                <div className={`p-1.5 rounded-lg ${nome === MAIN_ENTRANCE_NAME ? 'bg-yellow-500/10 text-yellow-500' : 'bg-purple-500/10 text-purple-500'}`}>{nome === MAIN_ENTRANCE_NAME ? <Crown size={14} /> : <MapPin size={14} />}</div>
-                                <span className="truncate">{nome}</span>
-                            </h4>
-                            <span className="text-2xl font-black" style={{ color: theme.text }}>{stats.total}</span>
-                        </div>
-                        <div className="w-full h-2.5 rounded-full bg-gray-500/10 overflow-hidden flex mb-2">
-                            <div style={{ width: `${(stats.visitor / stats.total) * 100 || 0}%`, background: COLORS.visitor }}></div>
-                            <div style={{ width: `${(stats.member / stats.total) * 100 || 0}%`, background: COLORS.member }}></div>
-                        </div>
-                        <div className="flex justify-between text-[11px] font-bold uppercase opacity-70" style={{ color: theme.text }}>
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: COLORS.visitor }}></div> Vis: {stats.visitor}</span>
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: COLORS.member }}></div> Mem: {stats.member}</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    };
+    if (loading || !data) return <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0F0014] text-slate-800 dark:text-white z-50"><RefreshCw className="animate-spin text-purple-600 mb-4" size={48} /><span>Carregando Inteligência...</span></div>;
 
-    if (loading || !data) return <div className="fixed inset-0 flex flex-col items-center justify-center font-bold z-50 gap-4" style={{ backgroundColor: theme.bg, color: theme.text }}><RefreshCw className="animate-spin text-purple-500" size={48} /><span className="text-base opacity-70 animate-pulse">Carregando Dashboard...</span></div>;
-
-    const handleExport = () => window.open(`${API_URL}/export`, '_blank');
-    console.log(handleExport)
+    // --- RENDERIZAÇÃO ---
     return (
-        <div className="w-full min-h-screen relative font-sans transition-colors duration-500 pb-24 scrollbar-hide selection:bg-purple-500 selection:text-white" style={{ backgroundColor: theme.bg, color: theme.text }}>
+        <div className={`w-full min-h-screen ${!isLightMode ? 'dark' : ''}`}>
 
-            <div className="sticky top-[60px] md:top-[70px] z-30 px-3 py-3 md:px-8 mt-[-1rem] backdrop-blur-xl border-b border-gray-500/5 shadow-sm transition-all" style={{ backgroundColor: isLightMode ? 'rgba(243, 244, 246, 0.95)' : 'rgba(15, 0, 20, 0.95)' }}>
-                <div className="max-w-[1600px] mx-auto flex flex-col gap-3 animate-fade-in-down">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 md:gap-4">
-                            <Link to="/ekklesia" className="p-2.5 rounded-xl border active:scale-95 transition-all hover:bg-gray-500/10" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}><ArrowLeft size={20} style={{ color: theme.text }} /></Link>
-                            <div>
-                                <h1 className="text-xl md:text-3xl font-black tracking-tight leading-none uppercase">Dashboard <span className="text-purple-500">Eventos</span></h1>
-                                <p className="text-[10px] md:text-xs font-bold mt-1 opacity-60 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse box-shadow-green"></span> {viewMode === 'LIVE' ? 'Monitoramento em Tempo Real' : 'Inteligência de Dados'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="w-full overflow-x-auto pb-1 no-scrollbar flex items-center gap-3">
-                        <div className="flex bg-gray-500/5 p-1.5 rounded-xl border shrink-0" style={{ borderColor: theme.cardBorder }}>
-                            <button onClick={() => setViewMode('LIVE')} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIVE' ? 'bg-white shadow-md text-black transform scale-105' : 'text-gray-400 hover:text-gray-600'}`}><Activity size={14} /> Ao Vivo</button>
-                            <button onClick={() => setViewMode('ANALYTICS')} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'ANALYTICS' ? 'bg-white shadow-md text-black transform scale-105' : 'text-gray-400 hover:text-gray-600'}`}><BarChart2 size={14} /> Análise</button>
-                        </div>
-                        {viewMode === 'LIVE' && (<><div className="h-8 w-[1px] bg-gray-500/20 shrink-0"></div><div className="flex gap-2 min-w-max">{daysToShow.map(day => (<button key={day} onClick={() => setSelectedDay(day)} className={`w-10 h-10 flex items-center justify-center rounded-xl text-xs font-black transition-all border ${selectedDay === day ? 'bg-purple-600 text-white border-purple-600 shadow-lg scale-110' : 'text-gray-500 bg-transparent border-transparent hover:bg-white/5 hover:border-gray-500/20'}`}>{day}</button>))}</div></>)}
-                    </div>
-                </div>
-            </div>
+            <div className="w-full min-h-screen font-sans transition-colors duration-300 pb-12 bg-slate-50 dark:bg-[#0F0014] text-slate-900 dark:text-slate-100">
 
-            <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-10">
-                <div className="animate-fade-in space-y-6 md:space-y-8">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                        <div className="col-span-2 lg:col-span-1 p-6 rounded-[2rem] relative overflow-hidden flex flex-col justify-center border h-36 md:h-48 shadow-xl transition-transform hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)', borderColor: 'transparent' }}>
-                            <div className="absolute right-[-20px] top-[-20px] opacity-20 text-white mix-blend-overlay"><Crown size={120} /></div>
-                            <span className="text-xs font-bold text-white/80 uppercase tracking-widest mb-1 flex items-center gap-1.5"><Users size={12} /> {viewMode === 'LIVE' ? 'Público Hoje' : 'Público Total'}</span>
-                            <span className="text-5xl md:text-8xl font-black text-white leading-none tracking-tighter shadow-black drop-shadow-sm">{currentViewStats.totalEntrance}</span>
-                            <span className="text-[10px] text-white/60 font-medium mt-2 bg-black/10 w-fit px-2 py-0.5 rounded-full">*Recepção Principal</span>
-                        </div>
-                        <div className="col-span-1 p-6 rounded-[2rem] border flex flex-col justify-between h-36 md:h-48 shadow-lg bg-gradient-to-br from-transparent to-purple-500/5 transition-transform hover:scale-[1.02]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1.5"><CalendarDays size={12} /> Total Evento</span>
-                            <div><span className="text-3xl md:text-6xl font-black block tracking-tighter" style={{ color: theme.text }}>{accumulatedTotal}</span><span className="text-[10px] font-bold opacity-50">Inscritos Gerais</span></div>
-                            <div className="w-full h-1.5 bg-purple-500/20 rounded-full"><div className="h-full bg-purple-500 rounded-full w-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div></div>
-                        </div>
-                        <div className="col-span-1 p-6 rounded-[2rem] border flex flex-col justify-between h-36 md:h-48 shadow-lg bg-gradient-to-br from-transparent to-green-500/5 transition-transform hover:scale-[1.02]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-green-500 flex items-center gap-1.5"><Baby size={12} /> Kids {viewMode === 'LIVE' ? 'Hoje' : 'Total'}</span>
-                            <span className="text-3xl md:text-6xl font-black tracking-tighter" style={{ color: theme.text }}>{currentViewStats.kidsTotal}</span>
-                            <div className="w-full h-1.5 bg-green-500/20 rounded-full"><div className="h-full bg-green-500 rounded-full w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div></div>
-                        </div>
-                        <div className="col-span-2 lg:col-span-1 p-6 rounded-[2rem] border flex flex-col justify-center gap-4 h-36 md:h-48 shadow-lg bg-gradient-to-br from-transparent to-blue-500/5 transition-transform hover:scale-[1.02]" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                            <div><div className="flex justify-between mb-1"><span className="text-[10px] font-bold text-orange-500 uppercase">Visitantes</span><span className="text-xs font-black">{currentViewStats.visitors}</span></div><div className="w-full h-2 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${(currentViewStats.visitors / (currentViewStats.totalEntrance || 1)) * 100}%` }}></div></div></div>
-                            <div><div className="flex justify-between mb-1"><span className="text-[10px] font-bold text-purple-500 uppercase">Membros</span><span className="text-xs font-black">{currentViewStats.members}</span></div><div className="w-full h-2 rounded-full bg-gray-200/20 overflow-hidden"><div className="h-full bg-purple-500" style={{ width: `${(currentViewStats.members / (currentViewStats.totalEntrance || 1)) * 100}%` }}></div></div></div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 p-6 md:p-8 rounded-[2.5rem] border shadow-xl" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3"><div className="p-2 rounded-xl bg-purple-500/10"><TrendingUp size={20} className="text-purple-500" /></div><div><h3 className="font-bold text-lg leading-none">{viewMode === 'LIVE' ? 'Fluxo em Tempo Real' : 'Evolução do Evento'}</h3><p className="text-xs opacity-50 font-bold mt-1">{viewMode === 'LIVE' ? `Monitoramento por hora (Dia ${selectedDay})` : 'Comparativo Diário'}</p></div></div>
-                                <div className="hidden md:flex items-center gap-2 bg-yellow-500/10 px-3 py-2 rounded-xl border border-yellow-500/20"><Clock size={16} className="text-yellow-600" /><div><span className="text-[10px] font-bold uppercase text-yellow-600 block leading-none">{viewMode === 'LIVE' ? 'Pico às' : 'Recorde em'} {peakData.text}</span><span className="text-xs font-black text-yellow-700">{peakData.val} pessoas</span></div></div>
-                            </div>
-                            {viewMode === 'LIVE' ? renderHourlyChart() : renderEvolutionChart()}
-                        </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
-                            <div className="p-6 rounded-[2rem] border flex flex-col items-center justify-center text-center shadow-lg" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <h3 className="text-xs font-bold uppercase opacity-50 mb-3 tracking-wider">Demografia: Gênero</h3>
-                                <div className="h-32 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={genderData} cx="50%" cy="50%" innerRadius={40} outerRadius={55} paddingAngle={5} dataKey="value"><Cell key="male" fill={COLORS.male} stroke="none" /><Cell key="female" fill={COLORS.female} stroke="none" /></Pie><Tooltip contentStyle={CustomTooltipStyle} /></PieChart></ResponsiveContainer></div>
-                                <div className="flex gap-4 justify-center mt-3 w-full"><div className="flex items-center gap-1.5 p-2 rounded-lg bg-blue-500/5 w-1/2 justify-center"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-xs font-bold text-blue-500">{currentViewStats.gender.M} H</span></div><div className="flex items-center gap-1.5 p-2 rounded-lg bg-pink-500/5 w-1/2 justify-center"><div className="w-2 h-2 rounded-full bg-pink-500"></div><span className="text-xs font-bold text-pink-500">{currentViewStats.gender.F} M</span></div></div>
-                            </div>
-                            <div className="p-6 rounded-[2rem] border shadow-lg" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <h3 className="text-xs font-bold uppercase opacity-50 mb-4 text-center tracking-wider">Demografia: Idade</h3>
-                                <div className="h-32 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={ageData} layout="vertical" margin={{ left: -15, right: 10 }}><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={60} tick={{ fontSize: 10, fill: theme.text, fontWeight: 'bold' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={CustomTooltipStyle} /><Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={12}>{ageData.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index === 0 ? 'kids' : index === 1 ? 'youth' : 'adult']} />))}</Bar></BarChart></ResponsiveContainer></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                        <div className="p-8 rounded-[2.5rem] border shadow-lg" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                            <div className="flex items-center gap-3 mb-6"><div className="p-2 rounded-xl bg-pink-500/10"><Share2 size={20} className="text-pink-500" /></div><h3 className="font-bold text-lg">Origem {viewMode === 'LIVE' ? `(Dia ${selectedDay})` : '(Geral)'}</h3></div>
-                            <div className="h-80 w-full"><ResponsiveContainer width="100%" height="100%"><BarChart layout="vertical" data={marketingData} margin={{ left: 0, right: 10 }}><CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={theme.gridColor} opacity={0.3} /><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={110} tick={{ fill: theme.text, fontSize: 11, fontWeight: 'bold' }} tickLine={false} axisLine={false} /><Tooltip cursor={{ fill: theme.text, opacity: 0.05 }} contentStyle={CustomTooltipStyle} /><Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>{(marketingData).map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS_MARKETING[index % COLORS_MARKETING.length]} />))}</Bar></BarChart></ResponsiveContainer></div>
-                        </div>
-                        <div className="flex flex-col gap-6">
-                            <div className="p-8 rounded-[2.5rem] border shadow-lg" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Briefcase size={20} className="text-blue-500" /> Top Igrejas {viewMode === 'LIVE' ? `(Dia ${selectedDay})` : '(Geral)'}</h3>
-                                <div className="space-y-3">
-                                    {(churchData).slice(0, 3).map((church: any, index: number) => (
-                                        <div key={index} className="flex items-center justify-between p-3 rounded-xl border bg-gray-500/5 transition-colors hover:bg-gray-500/10" style={{ borderColor: theme.cardBorder }}><div className="flex items-center gap-3 overflow-hidden"><span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black ${index === 0 ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-600'}`}>#{index + 1}</span><span className="font-bold text-sm truncate" style={{ color: theme.text }}>{church.name}</span></div><span className="font-black text-lg text-purple-600" style={{ color: theme.text }}>{church.value}</span></div>
-                                    ))}
+                {/* HEADER FIXO */}
+                <div className="sticky top-0 z-40 w-full px-4 md:px-8 py-4 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-[#0F0014]/90">
+                    <div className="w-full flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Link to="/ekklesia" className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-white transition-all"><ArrowLeft size={20} /></Link>
+                                <div>
+                                    <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight">Dashboard <span className="text-purple-600">Eventos</span></h1>
                                 </div>
                             </div>
-                            <div className="flex-1 p-8 rounded-[2.5rem] border overflow-hidden flex flex-col shadow-lg" style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBorder }}>
-                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Zap size={20} className="text-yellow-500" /> Raio-X Locais {viewMode === 'LIVE' ? `(Dia ${selectedDay})` : '(Total Geral)'}</h3>
-                                <div className="flex-1 overflow-y-auto scrollbar-hide max-h-[350px]">{renderCheckpointsDetails()}</div>
+                        </div>
+
+                        {/* NAV TABS + DATA (AGORA JUNTOS PARA TODAS AS ABAS) */}
+                        <div className="flex items-center gap-4 overflow-x-auto pb-1 no-scrollbar">
+                            {/* BOTÕES DE ABA */}
+                            <div className="flex p-1 rounded-xl bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/5 shrink-0">
+                                <button onClick={() => setActiveTab('LIVE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'LIVE' ? 'bg-white dark:bg-[#1A0524] text-red-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Activity size={14} /> Operacional</button>
+                                <button onClick={() => setActiveTab('PEOPLE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'PEOPLE' ? 'bg-white dark:bg-[#1A0524] text-blue-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Users size={14} /> Perfil</button>
+                                <button onClick={() => setActiveTab('MARKETING')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'MARKETING' ? 'bg-white dark:bg-[#1A0524] text-purple-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Target size={14} /> Marketing</button>
+                            </div>
+
+                            {/* SEPARADOR VISUAL */}
+                            <div className="h-8 w-[1px] bg-slate-300 dark:bg-white/10 shrink-0"></div>
+
+                            {/* BOTÕES DE DATA (AGORA SEMPRE VISÍVEIS) */}
+                            <div className="flex gap-2 shrink-0">
+                                {daysToShow.map(day => (
+                                    <button
+                                        key={day}
+                                        onClick={() => setSelectedDay(day)}
+                                        className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${selectedDay === day ? 'bg-purple-600 text-white border-purple-600 shadow-lg scale-110' : 'border-slate-300 dark:border-white/20 text-slate-600 dark:text-white opacity-60 hover:opacity-100'}`}
+                                    >
+                                        {day}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* AREA DE CONTEÚDO */}
+                <div className="w-full px-4 md:px-8 py-6 animate-fade-in">
+
+                    {/* --- VISÃO 1: OPERACIONAL --- */}
+                    {activeTab === 'LIVE' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                <div className="col-span-1 p-8 rounded-[1.5rem] relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl bg-gradient-to-br from-red-600 to-orange-600 text-white border border-transparent h-64">
+                                    <div className="absolute top-[-20%] right-[-20%] opacity-20"><Crown size={180} /></div>
+                                    <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2"><Users size={14} /> Total Dia {selectedDay}</span>
+                                    <span className="text-8xl font-black leading-none drop-shadow-md">{stats.totalEntrance}</span>
+                                    <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm border border-white/20">Check-ins</div>
+                                </div>
+
+                                <Card className="h-64">
+                                    <CardTitle icon={<Baby size={18} />} title="Kids" color="green" />
+                                    <span className="text-7xl font-black mb-2">{stats.kidsTotal}</span>
+                                    <div className="w-24 h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-full animate-pulse"></div></div>
+                                </Card>
+
+                                <Card className="h-64">
+                                    <CardTitle icon={<Clock size={18} />} title="Pico" color="orange" />
+                                    <span className="text-6xl font-black">{peakData.hour}</span>
+                                    <span className="text-sm font-bold text-orange-500 mt-2 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-full border border-orange-100 dark:border-transparent">{String(peakData.val)} p/h</span>
+                                </Card>
+
+                                <Card className="h-64 justify-around py-8">
+                                    <div className="w-full px-4">
+                                        <div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div>
+                                        <div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div>
+                                    </div>
+                                    <div className="w-full px-4">
+                                        <div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div>
+                                        <div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                                <Card className="xl:col-span-8 h-[500px] !items-stretch !p-8">
+                                    <div className="flex items-center gap-3 mb-6"><Activity className="text-red-500" /><h3 className="font-bold text-lg">Fluxo em Tempo Real</h3></div>
+                                    <div className="flex-1 min-h-0">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={hourlyData}>
+                                                <defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.2} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: chartTheme.text }} dy={10} />
+                                                <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
+                                                <Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Card>
+                                <Card className="xl:col-span-4 h-[500px] !justify-start !items-stretch !p-0 overflow-hidden bg-slate-50 dark:bg-[#0F0014] border-0">
+                                    <div className="p-6 bg-white dark:bg-[#1A0524] border-b border-slate-200 dark:border-[#2D0A3D] flex items-center gap-2 rounded-t-[1.5rem]"><Zap className="text-yellow-500" size={18} /><span className="font-bold text-sm">RAIO-X DETALHADO</span></div>
+                                    <div className="overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-[#0F0014] h-full rounded-b-[1.5rem]">
+                                        {stats.checkpointsList.map((cp: CheckpointData) => (
+                                            <div key={cp.name} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm">
+                                                <div><span className="block text-xs font-bold opacity-60 uppercase">{cp.name}</span><span className="text-[10px] bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded mt-1 inline-block text-slate-500 dark:text-slate-300">{cp.visitor || 0} Visitantes</span></div>
+                                                <span className="text-2xl font-black">{cp.total}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- VISÃO 2: PESSOAS --- */}
+                    {activeTab === 'PEOPLE' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card className="h-[400px]">
+                                    <CardTitle icon={<Users size={18} />} title={`Gênero (Dia ${selectedDay})`} color="blue" />
+                                    <div className="h-60 w-full relative">
+                                        <ResponsiveContainer><PieChart><Pie data={genderData} innerRadius={80} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none"><Cell fill={COLORS.male} /><Cell fill={COLORS.female} /></Pie><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} /></PieChart></ResponsiveContainer>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span className="text-4xl font-black">{stats.gender.M + stats.gender.F}</span><span className="text-xs font-bold opacity-50">TOTAL</span></div>
+                                    </div>
+                                </Card>
+                                <Card className="h-[400px]">
+                                    <CardTitle icon={<UserCheck size={18} />} title={`Idade (Dia ${selectedDay})`} color="indigo" />
+                                    <ResponsiveContainer width="100%" height="100%"><BarChart data={ageData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} tick={{ fill: chartTheme.text, fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} /><Bar dataKey="value" barSize={30} radius={[0, 10, 10, 0] as any}>{ageData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar></BarChart></ResponsiveContainer>
+                                </Card>
+                            </div>
+                            <Card className="min-h-[400px] !items-stretch !p-8">
+                                <div className="flex items-center gap-3 mb-6"><Briefcase className="text-blue-500" /><h3 className="font-bold text-lg">Ranking Igrejas (Dia {selectedDay})</h3></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                                    {churchData.map((c: any, i: number) => (
+                                        <div key={i} className={`flex items-center p-4 rounded-xl border transition-all ${i === 0 ? 'bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/20 shadow-md transform scale-105' : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/10'}`}>
+                                            <div className={`w-8 h-8 flex items-center justify-center rounded-full font-black mr-3 ${i === 0 ? 'bg-yellow-500 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>{i + 1}</div>
+                                            <div className="flex-1 min-w-0"><h4 className="font-bold text-sm truncate">{c.name}</h4><div className="h-1 bg-slate-200 dark:bg-white/10 rounded-full mt-2"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${(c.value / churchData[0].value) * 100}%` }}></div></div></div>
+                                            <span className="font-black text-xl ml-3">{c.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* --- VISÃO 3: MARKETING --- */}
+                    {activeTab === 'MARKETING' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                                <div className="xl:col-span-1 p-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-xl flex flex-col items-center justify-center text-center h-80 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                                    <Target size={48} className="mb-4 opacity-50" />
+                                    <span className="text-white/80 font-bold uppercase tracking-widest text-xs mb-2">Alcance do Dia {selectedDay}</span>
+                                    <span className="text-7xl font-black tracking-tighter mb-4 drop-shadow-lg">{accumulatedTotal}</span>
+                                    <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
+                                        <TrendingUp size={16} /> <span className="text-xs font-bold">Pessoas Impactadas</span>
+                                    </div>
+                                </div>
+
+                                <Card className="xl:col-span-2 h-80 !items-stretch !p-8">
+                                    <div className="flex items-center gap-3 mb-4"><Layers className="text-purple-500" /><h3 className="font-bold text-lg">Evolução Geral (Todo o Evento)</h3></div>
+                                    <div className="flex-1 min-h-0">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart data={evolutionData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: chartTheme.text }} dy={10} />
+                                                <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
+                                                <Bar dataKey="total" barSize={50} fill={COLORS.marketing} radius={[8, 8, 0, 0] as any} />
+                                                <Line type="monotone" dataKey="visitantes" stroke={COLORS.visitor} strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            <Card className="h-[600px] !items-stretch !p-8">
+                                <div className="flex items-center gap-3 mb-6"><Share2 className="text-pink-500" /><h3 className="font-bold text-lg">Canais de Aquisição (Dia {selectedDay})</h3></div>
+                                <div className="flex-1">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart layout="vertical" data={marketingData} margin={{ left: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={chartTheme.grid} />
+                                            <XAxis type="number" hide />
+                                            <YAxis dataKey="name" type="category" width={150} tick={{ fill: chartTheme.text, fontSize: 12, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
+                                            <Bar dataKey="value" barSize={40} radius={[0, 10, 10, 0] as any}>
+                                                {marketingData.map((_: any, i: number) => <Cell key={i} fill={COLORS.mkt[i % COLORS.mkt.length]} />)}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </div>
