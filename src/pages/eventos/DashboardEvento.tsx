@@ -4,7 +4,8 @@ import {
     Line, ComposedChart
 } from 'recharts';
 import {
-    Users, ArrowLeft, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Share2, Activity, Baby, Clock, UserCheck, Target, Layers
+    Users, ArrowLeft, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Share2, Activity, Baby, Clock, UserCheck, Target, Layers,
+    Truck, HeartHandshake, Home
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,6 +16,8 @@ const COLORS = {
     live: '#EF4444', male: '#3B82F6', female: '#EC4899', kids: '#10B981',
     marketing: '#8B5CF6', visitor: '#F97316', member: '#8B5CF6',
     youth: '#FACC15', adult: '#6366F1',
+    // Novas cores para os ministérios
+    evangelism: '#D97706', consolidation: '#059669', reception: '#2563EB',
     mkt: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB']
 };
 
@@ -44,9 +47,12 @@ interface StatsState {
     marketing: Record<string, number>;
     church: Record<string, number>;
     checkpointsList: CheckpointData[];
+    // NOVOS DADOS POR DEPARTAMENTO
+    evangelism: { total: number };
+    consolidation: { total: number; accepted: number; reconciled: number };
 }
 
-// --- COMPONENTES VISUAIS (Internalizados) ---
+// --- COMPONENTES VISUAIS ---
 const Card = ({ children, className = "" }: any) => (
     <div className={`
         relative flex flex-col items-center justify-center p-6
@@ -60,7 +66,7 @@ const Card = ({ children, className = "" }: any) => (
     </div>
 );
 
-const CardTitle = ({ icon, title, color }: any) => (
+const CardTitle = ({ icon, title, color = "blue" }: any) => (
     <div className="flex items-center gap-2 mb-4 w-full justify-center opacity-90">
         <div className={`p-1.5 rounded-lg text-${color}-600 bg-${color}-50 dark:bg-white/5 dark:text-${color}-400`}>{icon}</div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">{title}</h3>
@@ -70,20 +76,18 @@ const CardTitle = ({ icon, title, color }: any) => (
 export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'LIVE' | 'PEOPLE' | 'MARKETING'>('LIVE');
+    // Adicionei a aba 'DEPTS' para os Ministérios
+    const [activeTab, setActiveTab] = useState<'LIVE' | 'DEPTS' | 'PEOPLE' | 'MARKETING'>('LIVE');
 
-    // Pega o dia de hoje, ou define um padrão se não houver dados
     const today = new Date().getDate().toString();
     const [selectedDay, setSelectedDay] = useState(today);
 
-    // 1. FORÇA O BACKGROUND DA PÁGINA INTEIRA
     useEffect(() => {
         const color = isLightMode ? '#F3F4F6' : '#0F0014';
         document.body.style.backgroundColor = color;
         return () => { document.body.style.backgroundColor = ''; };
     }, [isLightMode]);
 
-    // 2. FETCH DATA
     const fetchData = async () => {
         try {
             const res = await fetch(`${API_URL}/dashboard`);
@@ -100,19 +104,20 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // 3. DIAS DISPONÍVEIS
     const daysToShow = useMemo(() => {
         const officialDays = ['11', '13', '14', '15', '16', '17'];
-        // Garante que o dia selecionado esteja na lista e ordena
         return Array.from(new Set([today, ...officialDays])).sort((a, b) => parseInt(a) - parseInt(b));
     }, [today]);
 
-    // 4. ENGINE DE DADOS (AGORA GLOBAL POR DIA)
+    // --- ENGINE DE DADOS (Atualizada para ler Ministérios) ---
     const stats = useMemo<StatsState>(() => {
         const s: StatsState = {
             totalEntrance: 0, kidsTotal: 0, visitors: 0, members: 0,
             gender: { M: 0, F: 0 }, age: { CRIANCA: 0, JOVEM: 0, ADULTO: 0 },
-            marketing: {}, church: {}, checkpointsList: []
+            marketing: {}, church: {}, checkpointsList: [],
+            // Inicializa novos contadores
+            evangelism: { total: 0 },
+            consolidation: { total: 0, accepted: 0, reconciled: 0 }
         };
 
         if (!data?.checkpointsData) return s;
@@ -123,11 +128,15 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
             Object.entries(dataSet).forEach(([name, d]: [string, any]) => {
                 if (d.total !== undefined) {
                     const nameLower = name.toLowerCase();
+
+                    // --- FILTROS DE MINISTÉRIO ---
                     const isKids = nameLower.includes('kids') || nameLower.includes('criança');
                     const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção');
+                    const isKombi = nameLower.includes('kombi') || nameLower.includes('evangelismo');
 
                     if (isEntrance) s.totalEntrance += (d.total || 0);
                     if (isKids) s.kidsTotal += (d.total || 0);
+                    if (isKombi) s.evangelism.total += (d.total || 0);
 
                     // Soma Geral
                     s.visitors += d.type?.VISITOR || 0;
@@ -137,9 +146,24 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                     if (d.gender) { s.gender.M += d.gender.M || 0; s.gender.F += d.gender.F || 0; }
                     if (d.age) { s.age.CRIANCA += d.age.CRIANCA || 0; s.age.JOVEM += d.age.JOVEM || 0; s.age.ADULTO += d.age.ADULTO || 0; }
 
-                    // Listas
+                    // Listas e Consolidação (Lendo do Marketing Source)
                     const mkt = d.marketing || d.marketingSource;
-                    if (mkt) Object.entries(mkt).forEach(([k, v]) => s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number));
+                    if (mkt) {
+                        Object.entries(mkt).forEach(([k, v]) => {
+                            s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number);
+
+                            // Lógica para contar decisões de Consolidação baseada no texto salvo
+                            const sourceLower = (k || '').toLowerCase();
+                            if (sourceLower.includes('aceitou') || sourceLower.includes('decisão')) {
+                                s.consolidation.total += (v as number);
+                                s.consolidation.accepted += (v as number);
+                            }
+                            if (sourceLower.includes('reconcilia')) {
+                                s.consolidation.total += (v as number);
+                                s.consolidation.reconciled += (v as number);
+                            }
+                        });
+                    }
 
                     const ch = d.church;
                     if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
@@ -156,29 +180,24 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
             });
         };
 
-        // --- MUDANÇA PRINCIPAL: APLICA O FILTRO DE DATA PARA TODAS AS ABAS ---
         if (data.checkpointsData[selectedDay]) {
             aggregate(data.checkpointsData[selectedDay]);
         }
-        // Se quiser ver "Todos os Dias" no futuro, criar lógica aqui
-        // ---------------------------------------------------------------------
 
         s.checkpointsList = Object.values(cpMap).sort((a, b) => b.total - a.total);
 
-        // Fallback de segurança visual (se recepção falhar, usa soma total)
+        // Fallback
         if (s.totalEntrance === 0 && (s.visitors + s.members) > 0) {
             s.totalEntrance = s.visitors + s.members;
         }
 
         return s;
-    }, [data, selectedDay]); // Depende apenas do dia selecionado e dos dados
+    }, [data, selectedDay]);
 
-    // PREPARAÇÃO VISUAL
     const chartTheme = getChartTheme(isLightMode);
 
-    // Gráfico Horário (Timeline do dia selecionado)
+    // Gráficos
     const hourlyData = data?.timeline?.[selectedDay] ? Object.keys(data.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(h => ({ name: `${h}h`, value: data.timeline[selectedDay][h] })) : [];
-
     const peakData = useMemo(() => {
         if (!data?.timeline?.[selectedDay]) return { hour: '--', val: 0 };
         const entries = Object.entries(data.timeline[selectedDay]) as [string, number][];
@@ -188,33 +207,17 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
 
     const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
     const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
-
     const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
-    const ageData = [
-        { name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids },
-        { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' },
-        { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }
-    ];
-
-    // O Acumulado Total ainda considera a soma deste dia (stats.totalEntrance)
-    // Se quiser o acumulado GLOBAL (todos os dias), usaríamos outra lógica, 
-    // mas aqui mostraremos o Total do Dia Selecionado para manter coerência.
+    const ageData = [{ name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids }, { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' }, { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }];
     const accumulatedTotal = stats.totalEntrance;
 
-    // Gráfico de Evolução (Mantém todos os dias para contexto histórico)
     const evolutionData = ['13', '14', '15', '16', '17'].map(day => {
         let total = 0; let vis = 0;
         if (data?.checkpointsData?.[day]) {
-            // Soma manual aqui pois não depende do stats filtrado
             const checkData = data.checkpointsData[day];
             const aggr = (obj: any) => {
                 Object.values(obj).forEach((val: any) => {
-                    if (val.total !== undefined) {
-                        total += val.total || 0;
-                        vis += val.type?.VISITOR || 0;
-                    } else {
-                        aggr(val);
-                    }
+                    if (val.total !== undefined) { total += val.total || 0; vis += val.type?.VISITOR || 0; } else { aggr(val); }
                 })
             };
             aggr(checkData);
@@ -224,10 +227,8 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
 
     if (loading || !data) return <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0F0014] text-slate-800 dark:text-white z-50"><RefreshCw className="animate-spin text-purple-600 mb-4" size={48} /><span>Carregando Inteligência...</span></div>;
 
-    // --- RENDERIZAÇÃO ---
     return (
         <div className={`w-full min-h-screen ${!isLightMode ? 'dark' : ''}`}>
-
             <div className="w-full min-h-screen font-sans transition-colors duration-300 pb-12 bg-slate-50 dark:bg-[#0F0014] text-slate-900 dark:text-slate-100">
 
                 {/* HEADER FIXO */}
@@ -236,44 +237,32 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <Link to="/ekklesia" className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-white transition-all"><ArrowLeft size={20} /></Link>
-                                <div>
-                                    <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight">Dashboard <span className="text-purple-600">Eventos</span></h1>
-                                </div>
+                                <div><h1 className="text-xl md:text-2xl font-black uppercase tracking-tight">Dashboard <span className="text-purple-600">Eventos</span></h1></div>
                             </div>
                         </div>
 
-                        {/* NAV TABS + DATA (AGORA JUNTOS PARA TODAS AS ABAS) */}
+                        {/* NAV TABS */}
                         <div className="flex items-center gap-4 overflow-x-auto pb-1 no-scrollbar">
-                            {/* BOTÕES DE ABA */}
                             <div className="flex p-1 rounded-xl bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/5 shrink-0">
-                                <button onClick={() => setActiveTab('LIVE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'LIVE' ? 'bg-white dark:bg-[#1A0524] text-red-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Activity size={14} /> Operacional</button>
+                                <button onClick={() => setActiveTab('LIVE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'LIVE' ? 'bg-white dark:bg-[#1A0524] text-red-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Activity size={14} /> Geral</button>
+                                {/* NOVA ABA */}
+                                <button onClick={() => setActiveTab('DEPTS')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'DEPTS' ? 'bg-white dark:bg-[#1A0524] text-green-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Briefcase size={14} /> Ministérios</button>
                                 <button onClick={() => setActiveTab('PEOPLE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'PEOPLE' ? 'bg-white dark:bg-[#1A0524] text-blue-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Users size={14} /> Perfil</button>
                                 <button onClick={() => setActiveTab('MARKETING')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'MARKETING' ? 'bg-white dark:bg-[#1A0524] text-purple-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Target size={14} /> Marketing</button>
                             </div>
-
-                            {/* SEPARADOR VISUAL */}
                             <div className="h-8 w-[1px] bg-slate-300 dark:bg-white/10 shrink-0"></div>
-
-                            {/* BOTÕES DE DATA (AGORA SEMPRE VISÍVEIS) */}
                             <div className="flex gap-2 shrink-0">
                                 {daysToShow.map(day => (
-                                    <button
-                                        key={day}
-                                        onClick={() => setSelectedDay(day)}
-                                        className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${selectedDay === day ? 'bg-purple-600 text-white border-purple-600 shadow-lg scale-110' : 'border-slate-300 dark:border-white/20 text-slate-600 dark:text-white opacity-60 hover:opacity-100'}`}
-                                    >
-                                        {day}
-                                    </button>
+                                    <button key={day} onClick={() => setSelectedDay(day)} className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${selectedDay === day ? 'bg-purple-600 text-white border-purple-600 shadow-lg scale-110' : 'border-slate-300 dark:border-white/20 text-slate-600 dark:text-white opacity-60 hover:opacity-100'}`}>{day}</button>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* AREA DE CONTEÚDO */}
                 <div className="w-full px-4 md:px-8 py-6 animate-fade-in">
 
-                    {/* --- VISÃO 1: OPERACIONAL --- */}
+                    {/* --- VISÃO 1: OPERACIONAL (GERAL) --- */}
                     {activeTab === 'LIVE' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -283,62 +272,91 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                                     <span className="text-8xl font-black leading-none drop-shadow-md">{stats.totalEntrance}</span>
                                     <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm border border-white/20">Check-ins</div>
                                 </div>
-
-                                <Card className="h-64">
-                                    <CardTitle icon={<Baby size={18} />} title="Kids" color="green" />
-                                    <span className="text-7xl font-black mb-2">{stats.kidsTotal}</span>
-                                    <div className="w-24 h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-full animate-pulse"></div></div>
-                                </Card>
-
-                                <Card className="h-64">
-                                    <CardTitle icon={<Clock size={18} />} title="Pico" color="orange" />
-                                    <span className="text-6xl font-black">{peakData.hour}</span>
-                                    <span className="text-sm font-bold text-orange-500 mt-2 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-full border border-orange-100 dark:border-transparent">{String(peakData.val)} p/h</span>
-                                </Card>
-
+                                <Card className="h-64"><CardTitle icon={<Baby size={18} />} title="Kids" color="green" /><span className="text-7xl font-black mb-2">{stats.kidsTotal}</span><div className="w-24 h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-full animate-pulse"></div></div></Card>
+                                <Card className="h-64"><CardTitle icon={<Clock size={18} />} title="Pico" color="orange" /><span className="text-6xl font-black">{peakData.hour}</span><span className="text-sm font-bold text-orange-500 mt-2 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-full border border-orange-100 dark:border-transparent">{String(peakData.val)} p/h</span></Card>
                                 <Card className="h-64 justify-around py-8">
-                                    <div className="w-full px-4">
-                                        <div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div>
-                                        <div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div>
-                                    </div>
-                                    <div className="w-full px-4">
-                                        <div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div>
-                                        <div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div>
-                                    </div>
+                                    <div className="w-full px-4"><div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div><div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
+                                    <div className="w-full px-4"><div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div><div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                                 </Card>
                             </div>
-
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                                 <Card className="xl:col-span-8 h-[500px] !items-stretch !p-8">
                                     <div className="flex items-center gap-3 mb-6"><Activity className="text-red-500" /><h3 className="font-bold text-lg">Fluxo em Tempo Real</h3></div>
-                                    <div className="flex-1 min-h-0">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={hourlyData}>
-                                                <defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.2} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: chartTheme.text }} dy={10} />
-                                                <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
-                                                <Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                    <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><AreaChart data={hourlyData}><defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.2} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: chartTheme.text }} dy={10} /><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} /><Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" /></AreaChart></ResponsiveContainer></div>
                                 </Card>
                                 <Card className="xl:col-span-4 h-[500px] !justify-start !items-stretch !p-0 overflow-hidden bg-slate-50 dark:bg-[#0F0014] border-0">
                                     <div className="p-6 bg-white dark:bg-[#1A0524] border-b border-slate-200 dark:border-[#2D0A3D] flex items-center gap-2 rounded-t-[1.5rem]"><Zap className="text-yellow-500" size={18} /><span className="font-bold text-sm">RAIO-X DETALHADO</span></div>
-                                    <div className="overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-[#0F0014] h-full rounded-b-[1.5rem]">
-                                        {stats.checkpointsList.map((cp: CheckpointData) => (
-                                            <div key={cp.name} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm">
-                                                <div><span className="block text-xs font-bold opacity-60 uppercase">{cp.name}</span><span className="text-[10px] bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded mt-1 inline-block text-slate-500 dark:text-slate-300">{cp.visitor || 0} Visitantes</span></div>
-                                                <span className="text-2xl font-black">{cp.total}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-[#0F0014] h-full rounded-b-[1.5rem]">{stats.checkpointsList.map((cp: CheckpointData) => (<div key={cp.name} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm"><div><span className="block text-xs font-bold opacity-60 uppercase">{cp.name}</span><span className="text-[10px] bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded mt-1 inline-block text-slate-500 dark:text-slate-300">{cp.visitor || 0} Visitantes</span></div><span className="text-2xl font-black">{cp.total}</span></div>))}</div>
                                 </Card>
                             </div>
                         </div>
                     )}
 
-                    {/* --- VISÃO 2: PESSOAS --- */}
+                    {/* --- VISÃO 2: MINISTÉRIOS (NOVO) --- */}
+                    {activeTab === 'DEPTS' && (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-black uppercase opacity-50 mb-4 pl-2">Performance por Área</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                {/* KOMBI / EVANGELISMO */}
+                                <Card className="h-64 border-l-4 !border-l-orange-500">
+                                    <CardTitle icon={<Truck size={20} />} title="Evangelismo (Kombi)" color="orange" />
+                                    <span className="text-6xl font-black text-orange-500">{stats.evangelism.total}</span>
+                                    <span className="text-xs font-bold opacity-60 mt-2">Vidas Alcançadas na Rua</span>
+                                </Card>
+
+                                {/* CONSOLIDAÇÃO */}
+                                <Card className="h-64 border-l-4 !border-l-emerald-500">
+                                    <CardTitle icon={<HeartHandshake size={20} />} title="Consolidação" color="emerald" />
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-6xl font-black text-emerald-600">{stats.consolidation.total}</span>
+                                        <span className="text-sm font-bold text-emerald-600/60 mb-2">Decisões</span>
+                                    </div>
+                                    <div className="flex gap-2 mt-4 w-full px-4">
+                                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 rounded p-2 text-center"><span className="block text-xl font-bold text-emerald-600">{stats.consolidation.accepted}</span><span className="text-[10px] uppercase font-bold opacity-50">Aceitou</span></div>
+                                        <div className="flex-1 bg-yellow-50 dark:bg-yellow-900/20 rounded p-2 text-center"><span className="block text-xl font-bold text-yellow-600">{stats.consolidation.reconciled}</span><span className="text-[10px] uppercase font-bold opacity-50">Reconc.</span></div>
+                                    </div>
+                                </Card>
+
+                                {/* KIDS */}
+                                <Card className="h-64 border-l-4 !border-l-green-500">
+                                    <CardTitle icon={<Baby size={20} />} title="Ministério Kids" color="green" />
+                                    <span className="text-6xl font-black text-green-500">{stats.kidsTotal}</span>
+                                    <span className="text-xs font-bold opacity-60 mt-2">Crianças Cuidadas</span>
+                                </Card>
+
+                                {/* RECEPÇÃO */}
+                                <Card className="h-64 border-l-4 !border-l-blue-500">
+                                    <CardTitle icon={<Home size={20} />} title="Recepção / Hall" color="blue" />
+                                    <span className="text-6xl font-black text-blue-500">{stats.totalEntrance}</span>
+                                    <div className="w-full mt-4 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${(stats.visitors / stats.totalEntrance) * 100}%` }}></div></div>
+                                    <span className="text-[10px] font-bold mt-1 text-blue-400 block text-center">{stats.visitors} Visitantes Novos</span>
+                                </Card>
+                            </div>
+
+                            {/* RANKING DE LOCAIS */}
+                            <Card className="min-h-[400px] !items-stretch !p-8">
+                                <div className="flex items-center gap-3 mb-6"><Zap className="text-yellow-500" /><h3 className="font-bold text-lg">Ranking Geral de Locais</h3></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {stats.checkpointsList.map((cp, i) => (
+                                        <div key={cp.name} className="flex items-center p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                                            <div className="w-8 h-8 rounded-full bg-white dark:bg-white/10 flex items-center justify-center font-bold text-sm mr-4 shadow-sm text-slate-500">{i + 1}</div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between mb-1">
+                                                    <span className="font-bold uppercase text-sm truncate">{cp.name}</span>
+                                                    <span className="font-black text-lg">{cp.total}</span>
+                                                </div>
+                                                <div className="h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(cp.total / (stats.totalEntrance || 1)) * 100}%` }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* --- VISÃO 3: PESSOAS --- */}
                     {activeTab === 'PEOPLE' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -369,7 +387,7 @@ export const DashboardEvento = ({ isLightMode }: { isLightMode: boolean }) => {
                         </div>
                     )}
 
-                    {/* --- VISÃO 3: MARKETING --- */}
+                    {/* --- VISÃO 4: MARKETING --- */}
                     {activeTab === 'MARKETING' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
