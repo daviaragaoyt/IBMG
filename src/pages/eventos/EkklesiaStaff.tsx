@@ -159,7 +159,7 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
     }, [staffUser]);
 
     const addToast = (msg: string, type: 'success' | 'error') => { const id = Date.now(); setToasts(prev => [...prev, { id, msg, type }]); };
-    const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
+    // const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
 
     const handleLogout = () => { setStaffUser(null); localStorage.removeItem('ekklesia_staff_user'); };
 

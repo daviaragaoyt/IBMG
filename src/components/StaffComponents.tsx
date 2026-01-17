@@ -206,8 +206,7 @@ export const PrayerScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot,
     </ScreenLayout>
 );
 
-// --- TELA 6: CONSOLIDAÇÃO (Verde Escuro) ---
-export const ConsolidationScreen = ({ user, onLogout, isLightMode, addToast, theme, API_URL }: any) => {
+export const ConsolidationScreen = ({ user, onLogout, addToast, theme, API_URL }: any) => {
     const [formData, setFormData] = useState({ name: '', phone: '', decision: 'Aceitou Jesus' });
     const [loading, setLoading] = useState(false);
 
