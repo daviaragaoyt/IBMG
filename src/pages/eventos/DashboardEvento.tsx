@@ -143,8 +143,8 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
         const sorted = entries.sort((a, b) => b[1] - a[1]);
         return sorted.length ? { hour: `${sorted[0][0]}h`, val: Number(sorted[0][1]) } : { hour: '--', val: 0 };
     }, [localData, selectedDay]);
-    const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
-    const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
+    // const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
+    // const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value);
     const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
     const ageData = [{ name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids }, { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' }, { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }];
     const accumulatedTotal = stats.totalEntrance;
