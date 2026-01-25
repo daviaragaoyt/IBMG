@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import {
     CheckCircle2, XCircle, MapPin, LogOut, HeartHandshake,
     Zap, Flame, Heart, Cross,
-    Baby, Scan, HandMetal, Users, Plus,
+    Baby, HandMetal, Users, Plus,
     ShoppingBag, Coffee, CalendarClock, ArrowUpCircle,
-    PackageCheck,
-    RefreshCw, Eye, LayoutDashboard
+    PackageCheck, RefreshCw, Eye, LayoutDashboard,
+    AlertCircle, ArrowLeft, Lock,
 } from 'lucide-react';
 
 // --- UTILITÁRIOS ---
@@ -24,22 +24,21 @@ export const getTheme = (isLightMode: boolean) => ({
     textSecondary: isLightMode ? '#666666' : '#9CA3AF',
 });
 
+// --- COMPONENTE TOAST ---
 export const Toast = ({ msg, type }: any) => (
-    <div className={`pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border-l-4 animate-slide-in-right bg-white text-gray-800 ${type === 'success' ? 'border-emerald-500' : 'border-red-500'}`}>
-        {type === 'success' ? <CheckCircle2 className="text-emerald-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
+    <div className={`pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border-l-4 animate-slide-in-right bg-white text-gray-800 ${type === 'success' ? 'border-emerald-500' : type === 'warning' ? 'border-yellow-500' : 'border-red-500'}`}>
+        {type === 'success' ? <CheckCircle2 className="text-emerald-500" size={20} /> : type === 'warning' ? <AlertCircle className="text-yellow-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
         <span className="font-bold text-sm">{msg}</span>
     </div>
 );
 
+// --- LAYOUT PADRÃO DAS TELAS ---
 const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, selectedSpot, theme, children }: any) => {
-
     const currentSpotName = checkpoints.find((c: any) => c.id === selectedSpot)?.name || "Local Indefinido";
 
     return (
         <div className="flex flex-col h-full min-h-screen transition-colors duration-500" style={{ background: theme.bgApp, color: theme.textPrimary }}>
             <div className={`pt-8 pb-6 px-6 relative z-20 border-b-2`} style={{ borderColor: accentColor }}>
-
-                {/* Cabeçalho Superior */}
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl shadow-lg" style={{ color: accentColor, background: `${accentColor}20`, border: `1px solid ${accentColor}40` }}>{icon}</div>
@@ -48,41 +47,18 @@ const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, s
                             <p className="text-xs font-bold opacity-60" style={{ color: accentColor }}>Olá, {user.name.split(' ')[0]}</p>
                         </div>
                     </div>
-
                     <div className="flex gap-2">
-                        {/* 1. Botão Dashboard (NOVO) - Roxo */}
-                        <Link to="/ekklesia/dashboard" className="p-3 rounded-2xl transition-colors bg-purple-500/10 text-purple-500 border border-purple-500/20 hover:bg-purple-500/20 flex items-center justify-center">
-                            <LayoutDashboard size={20} />
-                        </Link>
-
-                        {/* 2. Botão de Reuniões - Azul */}
-                        <Link to="/ekklesia/reunioes" className="p-3 rounded-2xl transition-colors bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 flex items-center justify-center">
-                            <CalendarClock size={20} />
-                        </Link>
-
-                        {/* 3. Botão Logout - Neutro */}
-                        <button onClick={onLogout} className="p-3 rounded-2xl transition-colors text-white hover:bg-white/10" style={{ border: `1px solid ${theme.borderColor}`, color: theme.textPrimary }}>
-                            <LogOut size={20} />
-                        </button>
+                        <Link to="/ekklesia/dashboard" className="p-3 rounded-2xl transition-colors bg-purple-500/10 text-purple-500 border border-purple-500/20 hover:bg-purple-500/20 flex items-center justify-center"><LayoutDashboard size={20} /></Link>
+                        <Link to="/ekklesia/reunioes" className="p-3 rounded-2xl transition-colors bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 flex items-center justify-center"><CalendarClock size={20} /></Link>
+                        <button onClick={onLogout} className="p-3 rounded-2xl transition-colors text-white hover:bg-white/10" style={{ border: `1px solid ${theme.borderColor}`, color: theme.textPrimary }}><LogOut size={20} /></button>
                     </div>
                 </div>
-
-                {/* Local Fixo */}
-                <div className="relative p-4 rounded-xl flex items-center gap-3 border transition-all shadow-sm"
-                    style={{ background: theme.inputBg, borderColor: theme.borderColor }}>
-                    <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 animate-pulse">
-                        <MapPin size={18} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold uppercase opacity-50 tracking-widest">Você está operando em:</p>
-                        <p className="font-black text-sm">{currentSpotName}</p>
-                    </div>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10B981]"></div>
-                    </div>
+                <div className="relative p-4 rounded-xl flex items-center gap-3 border transition-all shadow-sm" style={{ background: theme.inputBg, borderColor: theme.borderColor }}>
+                    <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 animate-pulse"><MapPin size={18} /></div>
+                    <div><p className="text-[10px] font-bold uppercase opacity-50 tracking-widest">Você está operando em:</p><p className="font-black text-sm">{currentSpotName}</p></div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10B981]"></div></div>
                 </div>
             </div>
-
             <div className="flex-1 overflow-y-auto">{children}</div>
         </div>
     );
@@ -92,25 +68,16 @@ const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, s
 const MeetingCounter = ({ theme }: any) => {
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(false);
-
     useEffect(() => { api.getMeetingCount().then((d: any) => setCount(d.count)).catch(() => { }); }, []);
-
     const increment = async () => {
         if (!confirm(`Deseja iniciar a Reunião #${count + 1}?`)) return;
         setLoading(true);
         if (navigator.vibrate) navigator.vibrate(100);
-        try {
-            const data = await api.incrementMeetingCount();
-            setCount(data.count);
-        } finally { setLoading(false); }
+        try { const data = await api.incrementMeetingCount(); setCount(data.count); } finally { setLoading(false); }
     };
-
     return (
         <div className="mx-6 mt-4 mb-2 p-4 rounded-2xl flex items-center justify-between border shadow-sm transition-all" style={{ background: theme.cardBg, borderColor: theme.borderColor }}>
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500"><CalendarClock size={24} /></div>
-                <div><p className="text-[10px] font-bold uppercase opacity-50 tracking-wider">Contagem Oficial</p><h3 className="text-xl font-black leading-none" style={{ color: theme.textPrimary }}>REUNIÃO #{count}</h3></div>
-            </div>
+            <div className="flex items-center gap-3"><div className="p-2 bg-purple-500/10 rounded-xl text-purple-500"><CalendarClock size={24} /></div><div><p className="text-[10px] font-bold uppercase opacity-50 tracking-wider">Contagem Oficial</p><h3 className="text-xl font-black leading-none" style={{ color: theme.textPrimary }}>REUNIÃO #{count}</h3></div></div>
             <button onClick={increment} disabled={loading} className="p-3 rounded-xl bg-purple-600 text-white shadow-lg active:scale-95 transition-all hover:bg-purple-700 flex flex-col items-center">{loading ? <span className="animate-spin">↻</span> : <ArrowUpCircle size={24} />}</button>
         </div>
     );
@@ -120,7 +87,6 @@ const MeetingCounter = ({ theme }: any) => {
 export const ReceptionScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, handleCount, onLogout, theme }: any) => {
     const [mode, setMode] = useState<'BUTTONS' | 'SCAN'>('BUTTONS');
     const [personType, setPersonType] = useState<'VISITOR' | 'MEMBER'>('VISITOR');
-
     return (
         <ScreenLayout user={user} title="Recepção" icon={<MapPin />} accentColor="#3B82F6" onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
             <MeetingCounter theme={theme} />
@@ -148,7 +114,6 @@ export const ReceptionScreen = ({ user, checkpoints, selectedSpot, setSelectedSp
                             <Scanner onScan={(d) => d[0]?.rawValue && console.log(d[0].rawValue)} />
                             <div className="absolute inset-0 border-[3px] border-white/20 rounded-[1.8rem] pointer-events-none m-4"></div>
                         </div>
-                        <div className="mt-6 flex flex-col items-center gap-2"><div className="bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20 shadow-lg"><Scan size={16} /> Aponte para o QR Code</div></div>
                     </div>
                 )}
             </div>
@@ -156,24 +121,25 @@ export const ReceptionScreen = ({ user, checkpoints, selectedSpot, setSelectedSp
     );
 };
 
-// --- TELA 4: LOJA / CANTINA (COM AUDITORIA E RETIRADA) ---
+// --- TELA 4: LOJA / CANTINA (COMPLETA COM CORREÇÕES) ---
 export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, addToast, onLogout, theme }: any) => {
+    // Estados
     const [tab, setTab] = useState<'VENDA' | 'ONLINE' | 'RETIRADA'>('VENDA');
+    const [loading, setLoading] = useState(false);
+
+    // Venda
     const [products, setProducts] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
     const [isCheckout, setIsCheckout] = useState(false);
-
-    // Estados Venda Balcão
     const [paymentMethod, setPaymentMethod] = useState('');
-    const [buyerType] = useState('VISITOR');
-    const [buyerGender] = useState('M');
+    const [buyerName, setBuyerName] = useState('');
+    const [proofFile, setProofFile] = useState<File | null>(null);
 
-    // Estados Auditoria Online
+    // Online/Auditoria
     const [pendingOrders, setPendingOrders] = useState<any[]>([]);
     const [selectedAudit, setSelectedAudit] = useState<any>(null);
-    const [_, setLoading] = useState(false);
 
-    // Estados Retirada
+    // Retirada
     const [scannedOrder, setScannedOrder] = useState<any>(null);
     const [personOrders, setPersonOrders] = useState<any>(null);
 
@@ -181,50 +147,61 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
     const isCantina = category === 'CANTINA';
     const accentColor = isCantina ? '#F59E0B' : '#06B6D4';
     const Icon = isCantina ? Coffee : ShoppingBag;
-    const API_IMAGE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
     useEffect(() => {
         if (tab === 'VENDA') api.getProducts(category).then(setProducts).catch(console.error);
         if (tab === 'ONLINE') fetchOrders();
     }, [tab, category]);
 
-    const fetchOrders = () => {
-        setLoading(true);
-        api.getPendingOrders().then(setPendingOrders).catch(() => addToast("Erro ao carregar", 'error')).finally(() => setLoading(false));
-    };
+    useEffect(() => {
+        let interval: any;
+        if (tab === 'ONLINE') interval = setInterval(fetchOrders, 5000);
+        return () => clearInterval(interval);
+    }, [tab]);
+
+    const fetchOrders = () => { api.getPendingOrders().then(setPendingOrders).catch(() => { }); };
 
     const addToCart = (p: any) => setCart(prev => {
         const exist = prev.find(i => i.id === p.id);
         return exist ? prev.map(i => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i) : [...prev, { ...p, quantity: 1 }];
     });
 
+    // 1. VENDA BALCÃO (COM SUPORTE A FOTO)
     const handleFinishSale = async () => {
-        if (!selectedSpot) return addToast("Selecione o local!", 'error');
+        if (!selectedSpot) return addToast("Selecione o local no topo!", 'error');
         setLoading(true);
         try {
-            await api.createSale({
-                checkpointId: selectedSpot, paymentMethod, buyerType, buyerGender,
-                items: cart.map(i => ({ productId: i.id, quantity: i.quantity, price: i.price }))
-            });
-            addToast(`Venda Realizada!`, 'success');
-            setCart([]); setIsCheckout(false); setPaymentMethod('');
-        } catch (e) { addToast("Erro venda", 'error'); }
+            const formData = new FormData();
+            formData.append('buyerName', buyerName || 'Balcão');
+            formData.append('buyerType', 'VISITOR');
+            formData.append('total', String(cart.reduce((a, b) => a + b.price * b.quantity, 0)));
+            formData.append('paymentMethod', paymentMethod);
+            formData.append('items', JSON.stringify(cart.map(i => ({ productId: i.id, quantity: i.quantity, price: i.price }))));
+            if (proofFile) formData.append('proof', proofFile);
+
+            await api.createOrder(formData);
+            addToast(`Venda Registrada!`, 'success');
+            setCart([]); setIsCheckout(false); setPaymentMethod(''); setProofFile(null); setBuyerName('');
+        } catch (e) { addToast("Erro ao processar", 'error'); }
         finally { setLoading(false); }
     };
 
+    // 2. AUDITORIA ONLINE
     const handleAuditAction = async (action: 'approve' | 'reject', orderCode: string) => {
-        if (!confirm(action === 'approve' ? "Aprovar pedido?" : "Rejeitar pedido?")) return;
+        if (!confirm(action === 'approve' ? "Confirmar pagamento?" : "Recusar pedido?")) return;
         setLoading(true);
         try {
             if (action === 'approve') await api.payOrder(orderCode);
             else await api.rejectOrder(orderCode);
-
             addToast(action === 'approve' ? "Aprovado!" : "Rejeitado!", action === 'approve' ? 'success' : 'error');
-            setSelectedAudit(null); fetchOrders();
+            setSelectedAudit(null);
+            fetchOrders();
         } catch (e) { addToast("Erro na ação", 'error'); }
         finally { setLoading(false); }
     };
 
+    // 3. RETIRADA
     const handleScan = async (code: string) => {
         if (!code) return;
         setLoading(true);
@@ -234,10 +211,10 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                 setScannedOrder(data); setPersonOrders(null);
             } else {
                 const data: any = await api.getPersonOrders(code);
-                if (data.orders.length === 0) addToast("Sem pedidos", 'warning');
+                if (!data.orders || data.orders.length === 0) addToast("Sem pedidos pendentes", 'warning');
                 else { setPersonOrders({ ...data, personId: code }); setScannedOrder(null); }
             }
-        } catch (e) { addToast("Erro ou não encontrado", 'error'); }
+        } catch (e) { addToast("Não encontrado", 'error'); }
         finally { setLoading(false); }
     };
 
@@ -247,27 +224,26 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
             await api.deliverOrder(orderCode);
             addToast("Entregue!", 'success');
             if (scannedOrder) setScannedOrder(null);
-            if (personOrders) {
-                setPersonOrders((prev: any) => ({ ...prev, orders: prev.orders.filter((o: any) => o.orderCode !== orderCode) }));
-            }
+            if (personOrders) setPersonOrders((prev: any) => ({ ...prev, orders: prev.orders.filter((o: any) => o.orderCode !== orderCode) }));
         } catch (e) { addToast("Erro entrega", 'error'); }
         finally { setLoading(false); }
     };
 
+    const auditList = pendingOrders.filter(o => o.status === 'ANALYSIS');
+    const counterList = pendingOrders.filter(o => o.status === 'PENDING');
+
     return (
         <ScreenLayout user={user} title={isCantina ? "Cantina" : "Store"} icon={<Icon />} accentColor={accentColor} onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
-
             <div className="flex bg-white/5 p-1 mx-6 mt-2 rounded-xl border border-white/10">
-                <button onClick={() => setTab('VENDA')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${tab === 'VENDA' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}>BALCÃO</button>
+                <button onClick={() => setTab('VENDA')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${tab === 'VENDA' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}>NOVA VENDA</button>
                 <button onClick={() => setTab('ONLINE')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${tab === 'ONLINE' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}>
-                    ONLINE {pendingOrders.length > 0 && <span className="bg-red-500 text-white w-4 h-4 rounded-full text-[9px] flex items-center justify-center">{pendingOrders.length}</span>}
+                    ONLINE {auditList.length > 0 && <span className="bg-red-500 text-white w-4 h-4 rounded-full text-[9px] flex items-center justify-center animate-pulse">{auditList.length}</span>}
                 </button>
                 <button onClick={() => setTab('RETIRADA')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${tab === 'RETIRADA' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}><PackageCheck size={14} /> RETIRADA</button>
             </div>
 
             <div className="p-6 h-full pb-24">
-
-                {/* ABA 1: VENDA */}
+                {/* ABA VENDA */}
                 {tab === 'VENDA' && (
                     <>
                         <div className="grid grid-cols-2 gap-3 pb-20 overflow-y-auto">
@@ -280,24 +256,30 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                             ))}
                         </div>
                         {cart.length > 0 && (
-                            <div className="absolute bottom-0 left-0 w-full bg-white dark:bg-gray-900 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-[2rem] p-6 z-30 border-t border-gray-800">
+                            <div className="absolute bottom-0 left-0 w-full bg-white dark:bg-gray-900 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-[2rem] p-6 z-30 border-t border-gray-800 animate-slide-up">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-3xl font-black" style={{ color: accentColor }}>{formatCurrency(cart.reduce((acc, i) => acc + i.price * i.quantity, 0))}</h2>
                                     <button onClick={() => setIsCheckout(true)} className="px-8 py-4 text-white rounded-2xl font-black shadow-lg hover:scale-105 transition-all" style={{ background: accentColor }}>RECEBER</button>
                                 </div>
                             </div>
                         )}
-                        {/* MODAL CHECKOUT */}
                         {isCheckout && (
-                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
-                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl animate-fade-in">
+                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4 animate-fade-in">
+                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl animate-slide-up">
                                     <h3 className="text-xl font-black text-center mb-4 text-gray-800 dark:text-white">Pagamento Balcão</h3>
-                                    <div className="grid grid-cols-3 gap-3 mb-6">
+                                    <input type="text" placeholder="Nome (Opcional)" className="w-full p-3 mb-4 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800" value={buyerName} onChange={e => setBuyerName(e.target.value)} />
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
                                         {['DINHEIRO', 'PIX', 'CARTAO'].map(m => (
-                                            <button key={m} onClick={() => setPaymentMethod(m)} className={`p-3 rounded-xl border-2 text-xs font-bold ${paymentMethod === m ? 'border-green-500 bg-green-500/10 text-green-500' : 'border-gray-200 text-gray-400'}`}>{m}</button>
+                                            <button key={m} onClick={() => setPaymentMethod(m)} className={`p-3 rounded-xl border-2 text-[10px] font-bold ${paymentMethod === m ? 'border-green-500 bg-green-500/10 text-green-500' : 'border-gray-200 text-gray-400'}`}>{m}</button>
                                         ))}
                                     </div>
-                                    <button onClick={handleFinishSale} disabled={!paymentMethod} className="w-full py-4 bg-green-600 text-white rounded-xl font-black shadow-lg disabled:opacity-50">FINALIZAR VENDA</button>
+                                    <div className="mb-4">
+                                        <label className="block w-full cursor-pointer text-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5">
+                                            <span className="text-xs font-bold text-gray-500">{proofFile ? `📄 ${proofFile.name}` : 'Anexar Foto (Opcional)'}</span>
+                                            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files && setProofFile(e.target.files[0])} />
+                                        </label>
+                                    </div>
+                                    <button onClick={handleFinishSale} disabled={!paymentMethod || loading} className="w-full py-4 bg-green-600 text-white rounded-xl font-black shadow-lg disabled:opacity-50">{loading ? <RefreshCw className="animate-spin mx-auto" /> : 'CONFIRMAR'}</button>
                                     <button onClick={() => setIsCheckout(false)} className="w-full mt-3 py-3 text-gray-400 font-bold text-xs">Cancelar</button>
                                 </div>
                             </div>
@@ -305,26 +287,39 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                     </>
                 )}
 
-                {/* ABA 2: ONLINE */}
+                {/* ABA ONLINE */}
                 {tab === 'ONLINE' && (
                     <div className="space-y-3 pb-20 overflow-y-auto">
-                        {pendingOrders.length === 0 ? <p className="text-center opacity-50 py-10">Tudo limpo.</p> : pendingOrders.map(order => (
-                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center">
+                        <h3 className="text-xs font-bold uppercase opacity-50 mb-2">Pedidos Online ({auditList.length})</h3>
+                        {auditList.length === 0 ? <p className="text-center opacity-30 text-xs py-4">Nenhum pedido online.</p> : auditList.map(order => (
+                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-l-4 border-l-yellow-500 border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center">
+                                <div><p className="font-bold text-gray-800 dark:text-white uppercase">{order.buyerName}</p><p className="text-xs text-gray-500">R$ {Number(order.total).toFixed(2)} • PIX</p></div>
+                                <button onClick={() => setSelectedAudit(order)} className="px-4 py-2 bg-yellow-600 text-white text-xs font-bold rounded-xl shadow flex items-center gap-2 animate-pulse"><Eye size={14} /> VER FOTO</button>
+                            </div>
+                        ))}
+                        <h3 className="text-xs font-bold uppercase opacity-50 mb-2 mt-6">Fila do Balcão ({counterList.length})</h3>
+                        {counterList.map(order => (
+                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-l-4 border-l-gray-500 border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center opacity-60">
                                 <div><p className="font-bold text-gray-800 dark:text-white">{order.buyerName}</p><p className="text-xs text-gray-500">R$ {Number(order.total).toFixed(2)}</p></div>
-                                <button onClick={() => setSelectedAudit(order)} className="px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl shadow flex items-center gap-2"><Eye size={14} /> VER</button>
+                                <span className="text-[10px] font-bold text-gray-400">PAGAR NO CAIXA</span>
                             </div>
                         ))}
                         {selectedAudit && (
-                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
                                 <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                                    <div className="flex-1 overflow-y-auto p-4 bg-gray-200 dark:bg-black">
-                                        <p className="text-center text-xs font-bold uppercase mb-2 text-gray-500">Comprovante</p>
-                                        <img src={`${API_IMAGE_URL}${selectedAudit.proofUrl}`} className="w-full rounded-xl mb-4 shadow-lg border-2 border-white" alt="Comprovante" />
-                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl space-y-2">
-                                            {selectedAudit.items.map((i: any) => <div key={i.id} className="text-sm font-bold text-gray-800 dark:text-white flex justify-between"><span>{i.product.name}</span><span>x{i.quantity}</span></div>)}
+                                    <div className="flex-1 overflow-y-auto p-4 bg-gray-200 dark:bg-black flex flex-col items-center">
+                                        <p className="text-center text-xs font-bold uppercase mb-4 text-gray-500 w-full">Comprovante</p>
+                                        {selectedAudit.proofUrl ? (
+                                            <img src={`${API_URL}${selectedAudit.proofUrl}`} className="w-full rounded-xl mb-4 shadow-lg border-2 border-white dark:border-gray-700 object-contain bg-black" alt="Comprovante" />
+                                        ) : (
+                                            <div className="h-40 w-full flex items-center justify-center bg-gray-300 dark:bg-gray-800 rounded-xl mb-4 text-xs font-bold opacity-50">Sem Imagem</div>
+                                        )}
+                                        <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-xl space-y-2 border border-gray-200 dark:border-gray-700">
+                                            <p className="text-center font-black text-xl mb-2 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-800 dark:text-white">Total: {formatCurrency(Number(selectedAudit.total))}</p>
+                                            {selectedAudit.items.map((i: any) => (<div key={i.id} className="text-sm font-bold text-gray-800 dark:text-white flex justify-between"><span>{i.product.name}</span><span>x{i.quantity}</span></div>))}
                                         </div>
                                     </div>
-                                    <div className="p-4 grid grid-cols-2 gap-3 bg-white dark:bg-gray-900">
+                                    <div className="p-4 grid grid-cols-2 gap-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
                                         <button onClick={() => handleAuditAction('reject', selectedAudit.orderCode)} className="py-4 bg-red-100 text-red-600 rounded-xl font-black text-sm hover:bg-red-200">REJEITAR</button>
                                         <button onClick={() => handleAuditAction('approve', selectedAudit.orderCode)} className="py-4 bg-green-600 text-white rounded-xl font-black text-sm shadow-lg hover:bg-green-700">APROVAR</button>
                                         <button onClick={() => setSelectedAudit(null)} className="col-span-2 py-3 text-gray-400 font-bold text-xs">Voltar</button>
@@ -335,7 +330,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                     </div>
                 )}
 
-                {/* ABA 3: RETIRADA */}
+                {/* ABA RETIRADA */}
                 {tab === 'RETIRADA' && (
                     <div className="flex flex-col items-center">
                         {!scannedOrder && !personOrders && (
@@ -345,23 +340,19 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                         )}
                         {(scannedOrder || personOrders) && (
                             <div className="w-full bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-2xl border-2 animate-slide-up" style={{ borderColor: '#10B981' }}>
-                                <h2 className="text-center font-black text-xl mb-4 text-gray-800 dark:text-white">
-                                    {scannedOrder ? scannedOrder.buyerName : personOrders.personName}
-                                </h2>
+                                <h2 className="text-center font-black text-xl mb-4 text-gray-800 dark:text-white">{scannedOrder ? scannedOrder.buyerName : personOrders.personName}</h2>
                                 <div className="space-y-3 mb-6">
                                     {(scannedOrder ? [scannedOrder] : personOrders.orders).map((o: any) => (
                                         <div key={o.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                                             <span className="font-mono font-black text-purple-500">#{o.orderCode}</span>
-                                            {o.status === 'PAID' ?
-                                                <button onClick={() => handleDeliver(o.orderCode)} className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg shadow">ENTREGAR</button> :
-                                                <span className="text-xs font-bold text-red-500">PENDENTE</span>
-                                            }
+                                            {o.status === 'PAID' ? <button onClick={() => handleDeliver(o.orderCode)} className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg shadow">ENTREGAR</button> : <span className="text-xs font-bold text-red-500">PENDENTE</span>}
                                         </div>
                                     ))}
                                 </div>
                                 <button onClick={() => { setScannedOrder(null); setPersonOrders(null); }} className="w-full py-3 text-gray-400 font-bold text-xs">Ler Outro</button>
                             </div>
                         )}
+                        <p className="text-center opacity-50 mt-10 text-xs">Use o scanner ou busque pelo código para entregar.</p>
                     </div>
                 )}
             </div>
@@ -410,15 +401,11 @@ export const EvangelismScreen = ({ user, checkpoints, selectedSpot, setSelectedS
 export const ConsolidationScreen = ({ user, onLogout, addToast, theme }: any) => {
     const [formData, setFormData] = useState({ name: '', phone: '', decision: 'Aceitou Jesus' });
     const [loading, setLoading] = useState(false);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setLoading(true);
-        try {
-            await api.saveConsolidation({ ...formData, observer: user.name });
-            addToast("Ficha Salva!", 'success'); setFormData({ name: '', phone: '', decision: 'Aceitou Jesus' });
-        } catch (e) { addToast("Erro", 'error'); } finally { setLoading(false); }
+        try { await api.saveConsolidation({ ...formData, observer: user.name }); addToast("Ficha Salva!", 'success'); setFormData({ name: '', phone: '', decision: 'Aceitou Jesus' }); }
+        catch (e) { addToast("Erro", 'error'); } finally { setLoading(false); }
     };
-
     return (
         <ScreenLayout user={user} title="Consolidação" icon={<HeartHandshake />} accentColor="#059669" onLogout={onLogout} checkpoints={[]} selectedSpot="" setSelectedSpot={() => { }} theme={theme}>
             <div className="p-6">
@@ -456,5 +443,95 @@ export const PrayerScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot,
                 </div>
             </div>
         </ScreenLayout>
+    );
+};
+
+// --- TELA DE LOGIN ---
+const StaffLogin = ({ onLogin, isLightMode }: any) => {
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const theme = getTheme(isLightMode);
+    const gradient = 'linear-gradient(135deg, #A800E0, #FF3D00)';
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault(); setLoading(true); setError('');
+        try { const data = await api.login(email); onLogin(data); } catch (err) { setError('Acesso negado.'); } finally { setLoading(false); }
+    };
+
+    return (
+        <div className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-500" style={{ background: theme.bgApp }}>
+            <div className="w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl border relative z-10 backdrop-blur-md" style={{ background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(26, 5, 36, 0.7)', borderColor: theme.borderColor }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg text-white transform hover:scale-110 transition-transform duration-300" style={{ background: gradient }}><Lock size={32} /></div>
+                <h2 className="text-3xl font-black text-center mb-2 tracking-tight" style={{ color: theme.textPrimary }}>Staff Access</h2>
+                <form onSubmit={handleLogin} className="space-y-5">
+                    <input type="email" required placeholder="Seu e-mail de staff" className="w-full p-5 rounded-2xl border outline-none font-bold transition-all focus:scale-[1.02] focus:shadow-lg" style={{ borderColor: theme.borderColor, color: theme.textPrimary, background: theme.inputBg }} value={email} onChange={e => setEmail(e.target.value)} />
+                    <button disabled={loading} className="w-full py-5 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all hover:brightness-110" style={{ background: gradient }}>{loading ? <RefreshCw className="animate-spin mx-auto" /> : 'ACESSAR'}</button>
+                </form>
+                {error && <div className="mt-4 p-3 rounded-xl bg-red-500/10 text-red-500 text-center text-sm font-bold flex items-center gap-2 justify-center animate-pulse"><AlertCircle size={16} />{error}</div>}
+                <Link to="/ekklesia" className="flex items-center justify-center gap-2 mt-8 text-xs font-bold opacity-50 hover:opacity-100 transition-opacity" style={{ color: theme.textPrimary }}><ArrowLeft size={12} /> Voltar ao Início</Link>
+            </div>
+        </div>
+    );
+};
+
+// --- COMPONENTE PRINCIPAL ---
+export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
+    const [staffUser, setStaffUser] = useState<any>(() => { const s = localStorage.getItem('ekklesia_staff_user'); return s ? JSON.parse(s) : null; });
+    const [checkpoints, setCheckpoints] = useState<any[]>([]);
+    const [selectedSpot, setSelectedSpot] = useState('');
+    const [toasts, setToasts] = useState<any[]>([]);
+    const theme = getTheme(isLightMode);
+
+    useEffect(() => {
+        if (staffUser) {
+            api.getCheckpoints().then((data: any) => {
+                setCheckpoints(data);
+                if (data.length > 0 && staffUser.department) {
+                    const dept = staffUser.department.toUpperCase();
+                    const match = data.find((c: any) => {
+                        const name = c.name.toUpperCase();
+                        if (dept === 'KIDS' && name.includes('KIDS')) return true;
+                        if (dept === 'RECEPTION' && (name.includes('RECEP') || name.includes('ENTRADA'))) return true;
+                        if (dept === 'EVANGELISM' && name.includes('KOMBI')) return true;
+                        if ((dept === 'PRAYER' || dept === 'PROPHETIC') && (name.includes('TENDA') || name.includes('PROFETICA') || name.includes('MARTIRES'))) return true;
+                        if (dept === 'STORE' && (name.includes('CANTINA') || name.includes('LIVRARIA') || name.includes('PSALMS'))) return true;
+                        return false;
+                    });
+                    if (match) setSelectedSpot(match.id);
+                }
+            }).catch(console.error);
+        }
+    }, [staffUser]);
+
+    const addToast = (msg: string, type: 'success' | 'error' | 'warning') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, msg, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+    };
+
+    const handleLogout = () => { setStaffUser(null); localStorage.removeItem('ekklesia_staff_user'); };
+    console.log(handleLogout)
+    const handleCount = async (payload: any, label: string) => {
+        if (!selectedSpot) return addToast("Selecione o Local no topo!", 'error');
+        if (navigator.vibrate) navigator.vibrate(50);
+        try { await api.count({ checkpointId: selectedSpot, quantity: 1, ...payload }); addToast(label, 'success'); } catch (e) { addToast("Erro de conexão", 'error'); }
+    };
+
+    if (!staffUser) return <StaffLogin onLogin={(user: any) => { setStaffUser(user); localStorage.setItem('ekklesia_staff_user', JSON.stringify(user)); }} isLightMode={isLightMode} />;
+
+    const commonProps = { user: staffUser, checkpoints, selectedSpot, setSelectedSpot, handleCount, theme, addToast };
+    const dept = staffUser.department?.toUpperCase();
+
+    return (
+        <div className="h-full">
+            <div className="fixed top-24 right-4 z-50 flex flex-col gap-2 pointer-events-none w-auto">{toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast msg={t.msg} type={t.type} /></div>)}</div>
+            {dept === 'CONSOLIDATION' ? <ConsolidationScreen {...commonProps} /> :
+                dept === 'KIDS' ? <KidsScreen {...commonProps} /> :
+                    dept === 'RECEPTION' ? <ReceptionScreen {...commonProps} /> :
+                        (dept === 'PRAYER' || dept === 'PROPHETIC') ? <PrayerScreen {...commonProps} /> :
+                            (dept === 'STORE' || dept === 'CANTINA') ? <StoreScreen {...commonProps} /> :
+                                <EvangelismScreen {...commonProps} />}
+        </div>
     );
 };
