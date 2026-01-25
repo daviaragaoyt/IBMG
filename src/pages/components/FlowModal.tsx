@@ -66,8 +66,10 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
                     )}
                     {step === 'REGISTER' && (
                         <div className="space-y-4 animate-fade-in">
-                            <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded-xl text-blue-600 font-bold border border-blue-100">Identificação para retirada.</p>
-                            <input type="text" placeholder="NOME COMPLETO *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:bg-white focus:border-purple-500 outline-none transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+
+                            <p className="text-xs bg-blue-50 p-3 rounded-xl text-blue-600 font-bold border border-blue-100">
+                                Identificação para retirada.
+                            </p>                            <input type="text" placeholder="NOME COMPLETO *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:bg-white focus:border-purple-500 outline-none transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                             <div className="flex gap-2">
                                 <input type="text" placeholder="WHATSAPP *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:bg-white focus:border-purple-500 outline-none transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: maskPhone(e.target.value) })} />
                                 <input type="number" placeholder="IDADE *" className="w-24 p-4 bg-gray-50 rounded-xl border font-bold focus:bg-white focus:border-purple-500 outline-none transition-all" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} />
