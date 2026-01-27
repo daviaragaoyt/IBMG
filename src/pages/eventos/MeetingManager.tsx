@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Plus, Trash2, CheckCircle2, Clock } from 'lucide-react';
-import { api } from '../../services/api'; // Usa a API centralizada
+import { api } from '../../services/api';
 
 interface MeetingManagerProps {
     isLightMode: boolean;
@@ -17,7 +17,7 @@ export const MeetingManager = ({ isLightMode }: MeetingManagerProps) => {
         title: '',
         date: '',
         time: '',
-        type: 'AGENDADA', // ou REALIZADA
+        type: 'AGENDADA',
         notes: '',
         createdBy: 'Admin'
     });
@@ -65,7 +65,6 @@ export const MeetingManager = ({ isLightMode }: MeetingManagerProps) => {
         }
     };
 
-    // Formata data para exibição
     const formatDate = (dateStr: string) => {
         const d = new Date(dateStr);
         return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -111,11 +110,15 @@ export const MeetingManager = ({ isLightMode }: MeetingManagerProps) => {
                                     </span>
                                 </div>
                                 <h3 className="text-xl font-bold leading-tight truncate">{m.title}</h3>
+
+                                {/* --- ÁREA DE NOTAS ATUALIZADA --- */}
                                 {m.notes && (
-                                    <div className="mt-3 text-sm opacity-70 bg-gray-100 dark:bg-black/20 p-3 rounded-xl border border-gray-200 dark:border-white/5 whitespace-pre-wrap">
+                                    <div className="mt-3 text-sm p-3 rounded-xl border whitespace-pre-wrap font-bold text-white bg-purple-950 border-gray-200 dark:text-white dark:bg-white/5 dark:border-white/10">
                                         {m.notes}
                                     </div>
                                 )}
+                                {/* ---------------------------------- */}
+
                             </div>
                         </div>
 

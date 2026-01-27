@@ -6,12 +6,12 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
-// Importa o componente novo
+// IMPORTANTE: Importando o componente detalhado que criamos acima
 import { DashboardEvento } from './DashboardEvento';
 
 export const EkklesiaDashboard = ({ isLightMode }: any) => {
     const [data, setData] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'EXECUTIVE' | 'EVENTS'>('EVENTS'); // Padrão: Eventos (Antigo)
+    const [activeTab, setActiveTab] = useState<'EXECUTIVE' | 'EVENTS'>('EVENTS');
 
     useEffect(() => {
         api.getDashboard().then(setData).catch(console.error);
@@ -22,7 +22,7 @@ export const EkklesiaDashboard = ({ isLightMode }: any) => {
     const { salesStats, meetingStats, consolidationCount, manualCount, scannerCount } = data;
     const theme = isLightMode ? { bg: '#F3F4F6', text: '#1A1A1A', card: '#FFFFFF' } : { bg: '#0F0014', text: '#FFFFFF', card: '#1A0524' };
 
-    // --- RENDERIZAÇÃO DO DASHBOARD EXECUTIVO (O NOVO) ---
+    // --- RENDERIZAÇÃO DO DASHBOARD EXECUTIVO (FINANCEIRO / GESTÃO) ---
     const renderExecutive = () => {
         const categoryData = [
             { name: 'Cantina', value: salesStats?.byCategory?.CANTINA || 0, color: '#F59E0B' },
@@ -153,7 +153,7 @@ export const EkklesiaDashboard = ({ isLightMode }: any) => {
 
             {/* RENDERIZAÇÃO CONDICIONAL */}
             {activeTab === 'EVENTS' ? (
-                // Passa todos os dados para o componente antigo funcionar
+                // Aqui passamos os dados para o componente detalhado
                 <DashboardEvento isLightMode={isLightMode} data={data} />
             ) : (
                 renderExecutive()
