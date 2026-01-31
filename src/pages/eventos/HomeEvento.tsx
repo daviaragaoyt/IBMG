@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, ArrowRight, UserCheck, ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import { QrCode, ArrowRight, UserCheck, ShoppingBag } from 'lucide-react';
 
 interface EventoProps { isLightMode: boolean; }
 
@@ -10,7 +10,6 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
         bg: isLightMode ? '#FFFFFF' : '#0F0014',
         textPrimary: isLightMode ? '#1A1A1A' : '#FFFFFF',
         textSecondary: isLightMode ? '#666666' : '#AAAAAA',
-        // --- ADICIONADO PARA CORRIGIR O ERRO ---
         cardBg: isLightMode ? '#FFFFFF' : '#1A0524',
         cardBorder: isLightMode ? '#F3F4F6' : '#2D0A3D',
     };
@@ -88,24 +87,21 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
 
                     <p className="text-xl md:text-2xl font-light max-w-2xl mx-auto" style={{ color: theme.textSecondary }}>Um tempo de comunhão, alinhamento e avivamento.</p>
 
-                    {/* --- BOTÕES DE AÇÃO --- */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 w-full px-4">
+                    {/* --- BOTÕES DE AÇÃO (CENTRALIZADOS COM FLEX) --- */}
+                    <div className="flex flex-wrap justify-center gap-4 mt-12 w-full px-4">
 
                         {/* 1. Credencial (Destaque) */}
-                        <Link to="/ekklesia/credencial" className="flex items-center justify-center gap-2 px-6 py-5 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 hover:brightness-110 sm:col-span-2 lg:col-span-4" style={{ background: theme.gradient }}>
-                            <QrCode size={20} /> Minha Credencial <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        <Link to="/ekklesia/credencial" className="w-full sm:w-auto min-w-[240px] flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:brightness-110" style={{ background: theme.gradient, color: '#FFF' }}>
+                            <QrCode size={20} />Credencial <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
 
-                        <Link to="/ekklesia/loja" className="flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg border-2 transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:text-cyan-500 hover:-translate-y-1" style={{ borderColor: isLightMode ? '#06B6D4' : '#FFFFFF30', color: isLightMode ? '#06B6D4' : '#FFFFFF' }}>
+                        {/* 2. Loja */}
+                        <Link to="/ekklesia/loja" className="w-full sm:w-auto min-w-[240px] flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg border-2 transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:text-cyan-500 hover:-translate-y-1" style={{ borderColor: isLightMode ? '#06B6D4' : '#FFFFFF30', color: isLightMode ? '#06B6D4' : '#FFFFFF' }}>
                             <ShoppingBag size={20} /> Loja Psalms
                         </Link>
 
-                        {/* 3. Praça Gourmet (Laranja) */}
-                        <Link to="/ekklesia/gourmet" className="flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg border-2 transition-all hover:bg-orange-500/10 hover:border-orange-500 hover:text-orange-500 hover:-translate-y-1" style={{ borderColor: isLightMode ? '#F59E0B' : '#FFFFFF30', color: isLightMode ? '#F59E0B' : '#FFFFFF' }}>
-                            <UtensilsCrossed size={20} /> Praça Gourmet
-                        </Link>
-
-                        <Link to="/ekklesia/admin" className="flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg border-2 transition-all hover:bg-purple-500/10 hover:border-purple-500 hover:text-purple-500 sm:col-span-2" style={{ borderColor: isLightMode ? '#A800E0' : '#FFFFFF30', color: isLightMode ? '#A800E0' : '#FFFFFF' }}>
+                        {/* 3. Staff */}
+                        <Link to="/ekklesia/admin" className="w-full sm:w-auto min-w-[240px] flex items-center justify-center gap-2 px-6 py-5 rounded-2xl font-bold text-lg border-2 transition-all hover:bg-purple-500/10 hover:border-purple-500 hover:text-purple-500" style={{ borderColor: isLightMode ? '#A800E0' : '#FFFFFF30', color: isLightMode ? '#A800E0' : '#FFFFFF' }}>
                             <UserCheck size={20} /> Acesso Staff
                         </Link>
 

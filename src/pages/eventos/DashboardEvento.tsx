@@ -1,33 +1,23 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
     AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    Line, ComposedChart
+    Line, ComposedChart, Legend
 } from 'recharts';
 import {
     Users, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Activity, Baby, Clock, UserCheck, Target, Layers,
-    Truck, HeartHandshake, Home, CalendarDays
+    HeartHandshake, Home, CalendarDays, MapPin, Share2, ArrowLeft
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// --- CORES & TEMA ---
 const COLORS = {
     live: '#EF4444', male: '#3B82F6', female: '#EC4899', kids: '#10B981',
-    marketing: '#8B5CF6', visitor: '#F97316', member: '#8B5CF6',
+    marketing: ['#8B5CF6', '#F59E0B', '#10B981', '#3B82F6', '#EC4899'],
+    visitor: '#F97316', member: '#8B5CF6',
     youth: '#FACC15', adult: '#6366F1',
-    evangelism: '#D97706', consolidation: '#059669', reception: '#2563EB',
-    mkt: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB']
+    evangelism: '#D97706', consolidation: '#059669', reception: '#2563EB'
 };
-
-// --- AJUSTE DE TEMA (O QUE VOCÊ PEDIU) ---
-const getChartTheme = (isLight: boolean) => ({
-    // Modo Claro: Preto (#000000) | Modo Escuro: Branco (#FFFFFF)
-    text: isLight ? '#000000' : '#FFFFFF',
-    grid: isLight ? '#e5e7eb' : '#2D0A3D',
-    tooltipBg: isLight ? '#ffffff' : '#1A0524',
-    tooltipBorder: isLight ? '#e2e8f0' : '#4c1d95',
-    color: isLight ? '#000000' : '#FFFFFF'
-});
 
 // --- TYPES ---
 interface CheckpointData { total: number; visitor: number; member: number; name?: string; }
@@ -38,38 +28,65 @@ interface StatsState {
     evangelism: { total: number }; consolidation: { total: number; accepted: number; reconciled: number };
 }
 
-// --- VISUAL COMPONENTS (Auxiliares) ---
-const Card = ({ children, className = "" }: any) => (
-    <div className={`relative flex flex-col items-center justify-center p-6 rounded-[1.5rem] border shadow-sm transition-all duration-300 bg-white dark:bg-[#1A0524] border-slate-200 dark:border-[#2D0A3D] text-slate-900 dark:text-white ${className}`}>
-        {children}
-    </div>
-);
-
-const CardTitle = ({ icon, title, color = "blue" }: any) => (
-    <div className="flex items-center gap-2 mb-4 w-full justify-center opacity-90">
-        <div className={`p-1.5 rounded-lg text-${color}-600 bg-${color}-50 dark:bg-white/5 dark:text-${color}-400`}>{icon}</div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">{title}</h3>
-    </div>
-);
-
 export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, data?: any }) => {
     const [localData, setLocalData] = useState<any>(data || null);
     const [loading, setLoading] = useState(!data);
-    const [activeTab, setActiveTab] = useState<'LIVE' | 'DEPTS' | 'PEOPLE' | 'MARKETING'>('LIVE');
+    const [activeTab, setActiveTab] = useState<'LIVE' | 'DEPTS' | 'PESSOAS' | 'MARKETING'>('LIVE');
 
-    const today = new Date().getDate().toString();
-    const [selectedDay, setSelectedDay] = useState(today);
+    const todayFormatted = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const [selectedDay, setSelectedDay] = useState(todayFormatted);
+
+    // --- TEMA DINÂMICO (Corrige o erro do isLightMode não usado) ---
+    const theme = {
+        bg: isLightMode ? 'bg-gray-50' : 'bg-[#0F0014]',
+        text: isLightMode ? 'text-gray-900' : 'text-white',
+        cardBg: isLightMode ? 'bg-white' : 'bg-[#1A0524]',
+        cardBorder: isLightMode ? 'border-gray-200' : 'border-[#2D0A3D]',
+        mutedText: isLightMode ? 'text-gray-500' : 'text-gray-400',
+        chartGrid: isLightMode ? '#E5E7EB' : '#2D0A3D',
+        chartTooltipBg: isLightMode ? '#FFFFFF' : '#1A0524',
+        chartTooltipBorder: isLightMode ? '#E5E7EB' : '#4c1d95',
+        chartText: isLightMode ? '#374151' : '#FFFFFF',
+        buttonInactive: isLightMode ? 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100' : 'bg-[#15041D] text-gray-400 border-white/10 hover:bg-white/5'
+    };
+
+    // --- COMPONENTES VISUAIS INTERNOS (Usam o tema) ---
+    const Card = ({ children, className = "" }: any) => (
+        <div className={`relative flex flex-col items-center justify-center p-6 rounded-[1.5rem] border shadow-sm transition-all duration-300 ${theme.cardBg} ${theme.cardBorder} ${theme.text} ${className}`}>
+            {children}
+        </div>
+    );
+
+    const CardTitle = ({ icon, title, color = "blue" }: any) => {
+        // Ajuste de background do ícone baseado no tema
+        const bgIcon = isLightMode ? 'bg-gray-100' : 'bg-white/5';
+
+        const colorClass = {
+            blue: 'text-blue-500', green: 'text-green-500', orange: 'text-orange-500',
+            purple: 'text-purple-500', indigo: 'text-indigo-500', emerald: 'text-emerald-500'
+        }[color as string] || 'text-gray-500';
+
+        return (
+            <div className="flex items-center gap-2 mb-4 w-full justify-center opacity-90">
+                <div className={`p-1.5 rounded-lg ${bgIcon} ${colorClass}`}>{icon}</div>
+                <h3 className={`text-xs font-bold uppercase tracking-wider text-center ${theme.mutedText}`}>{title}</h3>
+            </div>
+        );
+    };
 
     useEffect(() => {
-        if (data) {
-            setLocalData(data);
-            setLoading(false);
-        } else {
+        if (data) { setLocalData(data); setLoading(false); }
+        else {
             const fetchData = async () => {
                 try {
                     const res = await fetch(`${API_URL}/dashboard`);
                     const json = await res.json();
                     setLocalData(json);
+                    if (json.availableDays && json.availableDays.length > 0) {
+                        if (!json.availableDays.includes(todayFormatted)) {
+                            setSelectedDay(json.availableDays[0]);
+                        }
+                    }
                 } catch (e) { console.error(e); } finally { setLoading(false); }
             };
             fetchData();
@@ -78,11 +95,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
         }
     }, [data]);
 
-    const daysToShow = useMemo(() => {
-        if (!localData?.checkpointsData) return [today];
-        const apiDays = Object.keys(localData.checkpointsData);
-        return Array.from(new Set([...apiDays, today])).sort((a, b) => parseInt(a) - parseInt(b));
-    }, [today, localData]);
+    const daysToShow = localData?.availableDays || [todayFormatted];
 
     const stats = useMemo<StatsState>(() => {
         const s: StatsState = {
@@ -92,7 +105,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
             evangelism: { total: 0 }, consolidation: { total: 0, accepted: 0, reconciled: 0 }
         };
 
-        if (!localData?.checkpointsData) return s;
+        if (!localData?.checkpointsData || !localData.checkpointsData[selectedDay]) return s;
 
         const cpMap: Record<string, CheckpointData> = {};
 
@@ -101,54 +114,54 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                 if (d.total !== undefined) {
                     const nameLower = name.toLowerCase();
                     const isKids = nameLower.includes('kids') || nameLower.includes('criança');
-                    const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção');
+                    const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção') || nameLower.includes('total');
                     const isKombi = nameLower.includes('kombi') || nameLower.includes('evangelismo');
 
-                    if (isEntrance) s.totalEntrance += (d.total || 0);
+                    if (name === 'Total') s.totalEntrance = d.total;
+                    else if (isEntrance && !s.totalEntrance) s.totalEntrance += d.total;
+
                     if (isKids) s.kidsTotal += (d.total || 0);
                     if (isKombi) s.evangelism.total += (d.total || 0);
 
-                    s.visitors += d.type?.VISITOR || 0;
-                    s.members += d.type?.MEMBER || 0;
+                    if (name !== 'Total') {
+                        s.visitors += d.type?.VISITOR || 0;
+                        s.members += d.type?.MEMBER || 0;
+                        if (d.gender) { s.gender.M += d.gender.M || 0; s.gender.F += d.gender.F || 0; }
+                        if (d.age) { s.age.CRIANCA += d.age.CRIANCA || 0; s.age.JOVEM += d.age.JOVEM || 0; s.age.ADULTO += d.age.ADULTO || 0; }
 
-                    if (d.gender) { s.gender.M += d.gender.M || 0; s.gender.F += d.gender.F || 0; }
-                    if (d.age) { s.age.CRIANCA += d.age.CRIANCA || 0; s.age.JOVEM += d.age.JOVEM || 0; s.age.ADULTO += d.age.ADULTO || 0; }
+                        const mkt = d.marketing || d.marketingSource;
+                        if (mkt) Object.entries(mkt).forEach(([k, v]) => s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number));
+                        const ch = d.church;
+                        if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
 
-                    const mkt = d.marketing || d.marketingSource;
-                    if (mkt) {
-                        Object.entries(mkt).forEach(([k, v]) => {
-                            s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number);
-                            const sourceLower = (k || '').toLowerCase();
-                            if (sourceLower.includes('aceitou') || sourceLower.includes('decisão')) { s.consolidation.total += (v as number); s.consolidation.accepted += (v as number); }
-                            if (sourceLower.includes('reconcilia')) { s.consolidation.total += (v as number); s.consolidation.reconciled += (v as number); }
-                        });
+                        if (nameLower.includes('consolida') || nameLower.includes('decis') || nameLower.includes('altar')) {
+                            s.consolidation.total += (d.total || 0);
+                            s.consolidation.accepted += (d.accepted || 0);
+                            s.consolidation.reconciled += (d.reconciled || 0);
+                        }
                     }
 
-                    const ch = d.church;
-                    if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
-
-                    if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, name: name };
-                    cpMap[name].total += d.total || 0;
-                    cpMap[name].visitor += d.type?.VISITOR || 0;
-                    cpMap[name].member += d.type?.MEMBER || 0;
+                    if (name !== 'Total') {
+                        if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, name: name };
+                        cpMap[name].total += d.total || 0;
+                        cpMap[name].visitor += d.type?.VISITOR || 0;
+                        cpMap[name].member += d.type?.MEMBER || 0;
+                    }
                 } else { aggregate(d); }
             });
         };
 
         if (localData.checkpointsData[selectedDay]) aggregate(localData.checkpointsData[selectedDay]);
-
         s.checkpointsList = Object.values(cpMap).sort((a, b) => b.total - a.total);
         if (s.totalEntrance === 0 && (s.visitors + s.members) > 0) s.totalEntrance = s.visitors + s.members;
 
         return s;
     }, [localData, selectedDay]);
 
-    const chartTheme = getChartTheme(isLightMode);
+    const accumulatedTotal = stats.totalEntrance;
 
     const hourlyData = localData?.timeline?.[selectedDay]
-        ? Object.keys(localData.timeline[selectedDay])
-            .sort((a, b) => parseInt(a) - parseInt(b))
-            .map(h => ({ name: `${h}h`, value: localData.timeline[selectedDay][h] }))
+        ? Object.keys(localData.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(h => ({ name: `${h}h`, value: localData.timeline[selectedDay][h] }))
         : [];
 
     const peakData = useMemo(() => {
@@ -160,104 +173,109 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
 
     const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
     const ageData = [{ name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids }, { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' }, { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }];
-    const accumulatedTotal = stats.totalEntrance;
+    const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
+    const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6);
 
-    const evolutionData = ['14', '15', '16', '17'].map(day => {
+    const evolutionData = daysToShow.map((day: string) => {
         let total = 0; let vis = 0;
         if (localData?.checkpointsData?.[day]) {
-            const checkData = localData.checkpointsData[day];
-            const aggr = (obj: any) => {
-                Object.values(obj).forEach((val: any) => {
-                    if (val.total !== undefined) { total += val.total || 0; vis += val.type?.VISITOR || 0; } else { aggr(val); }
-                })
-            };
-            aggr(checkData);
+            const d = localData.checkpointsData[day];
+            if (d['Total']) { total = d['Total'].total; vis = d['Total'].type.VISITOR; }
+            else { Object.values(d).forEach((val: any) => { if (val.total && val !== d['Total']) { total += val.total; vis += val.type?.VISITOR || 0; } }); }
         }
-        return { name: `Dia ${day}`, total, visitantes: vis };
+        return { name: day, total, visitantes: vis };
     });
 
-    if (loading || !localData) return <div className="flex items-center justify-center p-10"><RefreshCw className="animate-spin text-purple-600" size={32} /></div>;
+    if (loading || !localData) return <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}><RefreshCw className="animate-spin text-purple-600" size={32} /></div>;
 
     return (
-        <div className={`w-full ${!isLightMode ? 'dark' : ''}`}>
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
+        <div className={`w-full min-h-screen ${theme.bg} ${theme.text} overflow-x-hidden transition-colors duration-300`}>
+            <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
 
-            <div className="w-full py-4 animate-fade-in">
+            <div className="w-full max-w-[1600px] mx-auto p-4 md:p-8 animate-fade-in">
 
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-full xl:w-auto">
-                        <div className="flex p-1 rounded-xl bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/5 shrink-0">
-                            <button onClick={() => setActiveTab('LIVE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'LIVE' ? 'bg-white dark:bg-[#1A0524] text-red-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Activity size={14} /> Geral</button>
-                            <button onClick={() => setActiveTab('DEPTS')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'DEPTS' ? 'bg-white dark:bg-[#1A0524] text-green-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Briefcase size={14} /> Ministérios</button>
-                            <button onClick={() => setActiveTab('PEOPLE')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'PEOPLE' ? 'bg-white dark:bg-[#1A0524] text-blue-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Users size={14} /> Perfil</button>
-                            <button onClick={() => setActiveTab('MARKETING')} className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${activeTab === 'MARKETING' ? 'bg-white dark:bg-[#1A0524] text-purple-600 shadow-sm' : 'opacity-60 hover:opacity-100'}`}><Target size={14} /> Marketing</button>
-                        </div>
+                {/* --- HEADER --- */}
+                <div className="flex flex-col gap-6 mb-8">
+                    <div className="flex items-center gap-4">
+                        <Link to="/ekklesia/admin" className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-xl border ${theme.cardBorder} ${theme.cardBg} hover:opacity-80 transition-all group shrink-0`}>
+                            <ArrowLeft size={20} className={`${theme.text} group-hover:-translate-x-1 transition-transform`} />
+                        </Link>
+                        <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate">
+                            Dashboard <span className="text-[#A855F7]">Eventos</span>
+                        </h1>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5 no-scrollbar overflow-x-auto max-w-full">
-                        <span className="text-[10px] font-black uppercase opacity-40 flex items-center gap-1 pl-1 text-white">
-                            <CalendarDays size={12} /> DIAS
-                        </span>
-                        <div className="h-6 w-[1px] bg-white/10"></div>
-                        <div className="flex gap-2">
-                            {daysToShow.map(day => (
-                                <button
-                                    key={day}
-                                    onClick={() => setSelectedDay(day)}
-                                    className={`w-8 h-8 rounded-lg text-xs font-black transition-all flex items-center justify-center ${selectedDay === day ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50 scale-110' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
-                                >
-                                    {day}
-                                </button>
-                            ))}
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-6 w-full">
+                        <div className="w-full lg:w-auto overflow-x-auto no-scrollbar">
+                            <div className={`${isLightMode ? 'bg-gray-200' : 'bg-[#15041D]'} p-1.5 rounded-2xl border ${theme.cardBorder} flex gap-1 min-w-max`}>
+                                {[
+                                    { id: 'LIVE', label: 'Operacional', icon: Activity, color: 'text-[#F87171]' },
+                                    { id: 'PESSOAS', label: 'Perfil', icon: Users, color: 'text-blue-400' },
+                                    { id: 'MARKETING', label: 'Marketing', icon: Target, color: 'text-purple-400' },
+                                    { id: 'DEPTS', label: 'Ministérios', icon: Briefcase, color: 'text-emerald-400' }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id as any)}
+                                        className={`px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? `${isLightMode ? 'bg-white' : 'bg-[#2D0A3D]'} ${tab.color} shadow-sm border ${theme.cardBorder}` : `${theme.mutedText} hover:opacity-100`}`}
+                                    >
+                                        <tab.icon size={16} className={activeTab === tab.id ? tab.color : 'opacity-70'} />
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className={`w-[1px] h-10 ${isLightMode ? 'bg-gray-300' : 'bg-white/10'} hidden lg:block`}></div>
+
+                        <div className="w-full lg:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex gap-2 min-w-max">
+                                {daysToShow.map((day: string) => {
+                                    const dayNumber = day.split('/')[0];
+                                    const isSelected = selectedDay === day;
+                                    return (
+                                        <button
+                                            key={day}
+                                            onClick={() => setSelectedDay(day)}
+                                            className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-sm font-black transition-all border shrink-0 ${isSelected ? 'bg-purple-600 border-purple-600 text-white shadow-lg scale-105' : theme.buttonInactive}`}
+                                        >
+                                            {dayNumber}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* === ABA: AO VIVO (GERAL) === */}
+                {/* --- CONTEÚDO --- */}
                 {activeTab === 'LIVE' && (
                     <div className="space-y-6 animate-slide-up">
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                            <div className="col-span-1 p-8 rounded-[1.5rem] relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl bg-gradient-to-br from-red-600 to-orange-600 text-white border border-transparent h-64">
-                                <div className="absolute top-[-20%] right-[-20%] opacity-20"><Crown size={180} /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2"><Users size={14} /> Total Dia {selectedDay}</span>
-                                <span className="text-8xl font-black leading-none drop-shadow-md">{stats.totalEntrance}</span>
-                                <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm border border-white/20">Check-ins</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+                            <div className={`col-span-1 p-6 md:p-8 rounded-[1.5rem] flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden h-56 md:h-64 border ${theme.cardBorder}`} style={{ background: 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)' }}>
+                                <Crown size={180} className="absolute -top-10 -right-10 text-white opacity-20" />
+                                <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full text-white"><CalendarDays size={12} /> Dia {selectedDay}</span>
+                                <span className="text-7xl md:text-8xl font-black tracking-tighter drop-shadow-sm text-white">{stats.totalEntrance}</span>
+                                <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Check-ins Totais</div>
                             </div>
-
-                            <Card className="h-64"><CardTitle icon={<Baby size={18} />} title="Kids" color="green" /><span className="text-7xl font-black mb-2">{stats.kidsTotal}</span><div className="w-24 h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-full animate-pulse"></div></div></Card>
-                            <Card className="h-64"><CardTitle icon={<Clock size={18} />} title="Pico" color="orange" /><span className="text-6xl font-black">{peakData.hour}</span><span className="text-sm font-bold text-orange-500 mt-2 bg-orange-50 dark:bg-orange-500/10 px-3 py-1 rounded-full border border-orange-100 dark:border-transparent">{String(peakData.val)} p/h</span></Card>
-                            <Card className="h-64 justify-around py-8">
-                                <div className="w-full px-4"><div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div><div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
-                                <div className="w-full px-4"><div className="flex justify-between mb-1"><span className="text-xs font-bold opacity-60">MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div><div className="h-2 bg-slate-100 dark:bg-white/10 rounded-full"><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
+                            <Card className="h-56 md:h-64"><CardTitle icon={<Baby size={18} />} title="Kids" color="green" /><span className="text-5xl md:text-7xl font-black">{stats.kidsTotal}</span><div className="w-16 h-1.5 bg-green-500/20 rounded-full mt-4 overflow-hidden"><div className="h-full bg-green-500 rounded-full w-2/3"></div></div></Card>
+                            <Card className="h-56 md:h-64"><CardTitle icon={<Clock size={18} />} title="Pico de Entrada" color="orange" /><span className="text-4xl md:text-6xl font-black">{peakData.hour}</span><span className="text-xs font-bold text-orange-500 mt-2 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">{String(peakData.val)} p/h</span></Card>
+                            <Card className="h-56 md:h-64 justify-around py-8">
+                                <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
+                                <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                             </Card>
                         </div>
-
                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                            <Card className="xl:col-span-8 h-[500px] !items-stretch !p-8">
-                                <div className="flex items-center gap-3 mb-6"><Activity className="text-red-500" /><h3 className="font-bold text-lg">Fluxo em Tempo Real</h3></div>
-                                <div className="flex-1 min-h-0">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={hourlyData}>
-                                            <defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.2} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} />
-                                            {/* EIXO X COM NEGRITO */}
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '900', fill: chartTheme.text }} dy={10} />
-                                            <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
-                                            <Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
+                            <Card className="xl:col-span-8 h-[350px] md:h-[500px] !items-stretch !p-4 md:!p-8">
+                                <div className="flex items-center gap-3 mb-6"><Activity className="text-red-500" /><h3 className={`font-bold text-lg ${theme.text}`}>Fluxo em Tempo Real</h3></div>
+                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><AreaChart data={hourlyData}><defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.3} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.chartGrid} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '700', fill: theme.chartText }} dy={10} /><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${theme.chartTooltipBorder}`, backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" /></AreaChart></ResponsiveContainer></div>
                             </Card>
-
-                            <Card className="xl:col-span-4 h-[500px] !justify-start !items-stretch !p-0 overflow-hidden bg-slate-50 dark:bg-[#0F0014] border-0">
-                                <div className="p-6 bg-white dark:bg-[#1A0524] border-b border-slate-200 dark:border-[#2D0A3D] flex items-center gap-2 rounded-t-[1.5rem]"><Zap className="text-yellow-500" size={18} /><span className="font-bold text-sm">RAIO-X DETALHADO</span></div>
-                                <div className="overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-[#0F0014] h-full rounded-b-[1.5rem] no-scrollbar">
+                            <Card className="xl:col-span-4 h-[400px] md:h-[500px] !justify-start !items-stretch !p-0 overflow-hidden">
+                                <div className={`p-6 ${isLightMode ? 'bg-gray-50' : 'bg-[#250833]'} border-b ${theme.cardBorder} flex items-center gap-2`}><Zap className="text-yellow-500" size={18} /><span className={`font-bold text-sm ${theme.text}`}>RAIO-X DETALHADO</span></div>
+                                <div className="overflow-y-auto p-4 space-y-3 h-full rounded-b-[1.5rem] no-scrollbar">
                                     {stats.checkpointsList.map((cp: CheckpointData) => (
-                                        <div key={cp.name} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm">
-                                            <div><span className="block text-xs font-bold opacity-60 uppercase">{cp.name}</span><span className="text-[10px] bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded mt-1 inline-block text-slate-500 dark:text-slate-300">{cp.visitor || 0} Visitantes</span></div>
+                                        <div key={cp.name} className={`flex justify-between items-center p-4 rounded-xl border ${isLightMode ? 'bg-white border-gray-100 hover:bg-gray-50' : 'bg-white/5 border-white/5 hover:bg-white/10'} transition-colors`}>
+                                            <div><span className={`block text-xs font-bold ${theme.mutedText} uppercase tracking-wider`}>{cp.name}</span><span className={`text-[10px] ${theme.mutedText} mt-1 block`}>{cp.visitor || 0} Visitantes</span></div>
                                             <span className="text-2xl font-black">{cp.total}</span>
                                         </div>
                                     ))}
@@ -267,69 +285,55 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                     </div>
                 )}
 
-                {/* === ABA: MINISTÉRIOS === */}
                 {activeTab === 'DEPTS' && (
                     <div className="space-y-6 animate-slide-up">
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                            <Card className="h-64 border-l-4 !border-l-orange-500"><CardTitle icon={<Truck size={20} />} title="Evangelismo (Kombi)" color="orange" /><span className="text-6xl font-black text-orange-500">{stats.evangelism.total}</span><span className="text-xs font-bold opacity-60 mt-2">Vidas Alcançadas na Rua</span></Card>
-                            <Card className="h-64 border-l-4 !border-l-emerald-500"><CardTitle icon={<HeartHandshake size={20} />} title="Consolidação" color="emerald" /><div className="flex items-end gap-2"><span className="text-6xl font-black text-emerald-600">{stats.consolidation.total}</span><span className="text-sm font-bold text-emerald-600/60 mb-2">Decisões</span></div><div className="flex gap-2 mt-4 w-full px-4"><div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 rounded p-2 text-center"><span className="block text-xl font-bold text-emerald-600">{stats.consolidation.accepted}</span><span className="text-[10px] uppercase font-bold opacity-50">Aceitou</span></div><div className="flex-1 bg-yellow-50 dark:bg-yellow-900/20 rounded p-2 text-center"><span className="block text-xl font-bold text-yellow-600">{stats.consolidation.reconciled}</span><span className="text-[10px] uppercase font-bold opacity-50">Reconc.</span></div></div></Card>
-                            <Card className="h-64 border-l-4 !border-l-green-500"><CardTitle icon={<Baby size={20} />} title="Ministério Kids" color="green" /><span className="text-6xl font-black text-green-500">{stats.kidsTotal}</span><span className="text-xs font-bold opacity-60 mt-2">Crianças Cuidadas</span></Card>
-                            <Card className="h-64 border-l-4 !border-l-blue-500"><CardTitle icon={<Home size={20} />} title="Recepção / Hall" color="blue" /><span className="text-6xl font-black text-blue-500">{stats.totalEntrance}</span><div className="w-full mt-4 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${(stats.visitors / stats.totalEntrance) * 100}%` }}></div></div><span className="text-[10px] font-bold mt-1 text-blue-400 block text-center">{stats.visitors} Visitantes Novos</span></Card>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className={`h-64 border-l-4 !border-l-emerald-500`}><CardTitle icon={<HeartHandshake size={20} />} title="Consolidação" color="emerald" /><div className="flex items-end gap-2"><span className="text-6xl font-black text-emerald-500">{stats.consolidation.total}</span></div><div className="flex gap-2 mt-4 w-full px-4"><div className={`flex-1 ${isLightMode ? 'bg-emerald-100' : 'bg-emerald-900/20'} rounded p-2 text-center`}><span className="block text-xl font-bold text-emerald-500">{stats.consolidation.accepted}</span><span className="text-[10px] uppercase font-bold opacity-50 text-emerald-500">Aceitou</span></div><div className={`flex-1 ${isLightMode ? 'bg-yellow-100' : 'bg-yellow-900/20'} rounded p-2 text-center`}><span className="block text-xl font-bold text-yellow-500">{stats.consolidation.reconciled}</span><span className="text-[10px] uppercase font-bold opacity-50 text-yellow-500">Reconc.</span></div></div></Card>
+                            <Card className="h-64 border-l-4 !border-l-green-500"><CardTitle icon={<Baby size={20} />} title="Kids" color="green" /><span className="text-6xl font-black text-green-500">{stats.kidsTotal}</span><span className={`text-xs font-bold opacity-60 mt-2 ${theme.mutedText}`}>Crianças Cuidadas</span></Card>
+                            <Card className="h-64 border-l-4 !border-l-blue-500"><CardTitle icon={<Home size={20} />} title="Recepção" color="blue" /><span className="text-6xl font-black text-blue-500">{stats.totalEntrance}</span><span className={`text-xs font-bold opacity-60 mt-2 ${theme.mutedText}`}>Total Entradas</span></Card>
                         </div>
                     </div>
                 )}
 
-                {/* === ABA: PERFIL (Demografia) === */}
-                {activeTab === 'PEOPLE' && (
+                {activeTab === 'PESSOAS' && (
                     <div className="space-y-6 animate-slide-up">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card className="h-[400px]">
-                                <CardTitle icon={<Users size={18} />} title={`Gênero (Dia ${selectedDay})`} color="blue" />
+                                <CardTitle icon={<Users size={18} />} title="Gênero" color="blue" />
                                 <div className="h-60 w-full relative">
-                                    <ResponsiveContainer><PieChart><Pie data={genderData} innerRadius={80} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none"><Cell fill={COLORS.male} /><Cell fill={COLORS.female} /></Pie><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} /></PieChart></ResponsiveContainer>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span className="text-4xl font-black">{stats.gender.M + stats.gender.F}</span><span className="text-xs font-bold opacity-50">TOTAL</span></div>
+                                    <ResponsiveContainer><PieChart><Pie data={genderData} innerRadius={80} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none"><Cell fill={COLORS.male} /><Cell fill={COLORS.female} /></Pie><Tooltip contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /></PieChart></ResponsiveContainer>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span className="text-4xl font-black">{stats.gender.M + stats.gender.F}</span><span className={`text-xs font-bold opacity-50 ${theme.mutedText}`}>TOTAL</span></div>
                                 </div>
                             </Card>
                             <Card className="h-[400px]">
-                                <CardTitle icon={<UserCheck size={18} />} title={`Idade (Dia ${selectedDay})`} color="indigo" />
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={ageData} layout="vertical">
-                                        <XAxis type="number" hide />
-                                        {/* EIXO Y COM NEGRITO */}
-                                        <YAxis dataKey="name" type="category" width={80} tick={{ fill: chartTheme.text, fontSize: 11, fontWeight: '900' }} axisLine={false} tickLine={false} />
-                                        <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
-                                        <Bar dataKey="value" barSize={30} radius={[0, 10, 10, 0] as any}>{ageData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <CardTitle icon={<UserCheck size={18} />} title="Faixa Etária" color="indigo" />
+                                <ResponsiveContainer width="100%" height="100%"><BarChart data={ageData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} tick={{ fill: theme.chartText, fontSize: 11, fontWeight: '700' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="value" barSize={30} radius={[0, 10, 10, 0] as any}>{ageData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar></BarChart></ResponsiveContainer>
+                            </Card>
+                            <Card className="h-[400px] md:col-span-2 lg:col-span-1">
+                                <CardTitle icon={<MapPin size={18} />} title="Top Igrejas" color="orange" />
+                                <ResponsiveContainer width="100%" height="100%"><BarChart data={churchData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} tick={{ fill: theme.chartText, fontSize: 10, fontWeight: '700' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="value" barSize={20} radius={[0, 10, 10, 0] as any} fill="#F97316" /></BarChart></ResponsiveContainer>
                             </Card>
                         </div>
                     </div>
                 )}
 
-                {/* === ABA: MARKETING === */}
                 {activeTab === 'MARKETING' && (
                     <div className="space-y-6 animate-slide-up">
                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                            <div className="xl:col-span-1 p-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-xl flex flex-col items-center justify-center text-center h-80 relative overflow-hidden"><div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div><Target size={48} className="mb-4 opacity-50" /><span className="text-white/80 font-bold uppercase tracking-widest text-xs mb-2">Alcance do Dia {selectedDay}</span><span className="text-7xl font-black tracking-tighter mb-4 drop-shadow-lg">{accumulatedTotal}</span><div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10"><TrendingUp size={16} /> <span className="text-xs font-bold">Pessoas Impactadas</span></div></div>
-                            <Card className="xl:col-span-2 h-80 !items-stretch !p-8">
-                                <div className="flex items-center gap-3 mb-4"><Layers className="text-purple-500" /><h3 className="font-bold text-lg">Evolução Geral (Todo o Evento)</h3></div>
-                                <div className="flex-1 min-h-0">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={evolutionData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartTheme.grid} />
-                                            {/* EIXO X COM NEGRITO */}
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '900', fill: chartTheme.text }} dy={10} />
-                                            <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartTheme.tooltipBorder}`, backgroundColor: chartTheme.tooltipBg, color: chartTheme.color }} />
-                                            <Bar dataKey="total" barSize={50} fill={COLORS.marketing} radius={[8, 8, 0, 0] as any} />
-                                            <Line type="monotone" dataKey="visitantes" stroke={COLORS.visitor} strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                </div>
+                            <div className="xl:col-span-1 p-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-xl flex flex-col items-center justify-center text-center h-80 relative overflow-hidden border border-white/10">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div><Target size={48} className="mb-4 opacity-50" /><span className="text-white/80 font-bold uppercase tracking-widest text-xs mb-2">Alcance do Dia {selectedDay}</span><span className="text-7xl font-black tracking-tighter mb-4 drop-shadow-lg">{accumulatedTotal}</span><div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10"><TrendingUp size={16} /> <span className="text-xs font-bold">Pessoas Impactadas</span></div>
+                            </div>
+                            <Card className="h-80 !items-stretch !p-4">
+                                <CardTitle icon={<Share2 size={18} />} title="Origem (Como soube)" color="purple" />
+                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={marketingData} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value">{marketingData.map((_entry, index) => <Cell key={`cell-${index}`} fill={COLORS.marketing[index % COLORS.marketing.length]} />)}</Pie><Tooltip contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Legend verticalAlign="bottom" height={36} /></PieChart></ResponsiveContainer></div>
+                            </Card>
+                            <Card className="xl:col-span-1 h-80 !items-stretch !p-8">
+                                <div className="flex items-center gap-3 mb-4"><Layers className="text-purple-500" /><h3 className={`font-bold text-lg ${theme.text}`}>Evolução Geral</h3></div>
+                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={evolutionData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.chartGrid} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '900', fill: theme.chartText }} dy={10} /><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${theme.chartTooltipBorder}`, backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="total" barSize={50} fill={COLORS.marketing[0]} radius={[8, 8, 0, 0] as any} /><Line type="monotone" dataKey="visitantes" stroke={COLORS.visitor} strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: theme.chartText }} /></ComposedChart></ResponsiveContainer></div>
                             </Card>
                         </div>
                     </div>
                 )}
-
             </div>
         </div>
     );
