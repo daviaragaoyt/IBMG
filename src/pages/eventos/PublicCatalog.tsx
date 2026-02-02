@@ -19,7 +19,7 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [toasts, setToasts] = useState<any[]>([]);
 
-    // ➕ ADICIONADO: Estado para monitorar o pagamento PIX
+    // Estado para monitorar o pagamento PIX
     const [pixData, setPixData] = useState<any>(null);
 
     const theme = isLightMode
@@ -35,17 +35,15 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
         api.getProducts(dbCategory).then(data => setProducts(data || [])).catch(() => setProducts([])).finally(() => setLoading(false));
     }, [type]);
 
-    // ➕ ADICIONADO: Polling (Verifica se o PIX foi pago a cada 3s)
+    // Polling (Verifica se o PIX foi pago a cada 3s)
     useEffect(() => {
         if (!pixData) return; // Só roda se tiver um PIX pendente
 
         const interval = setInterval(async () => {
             try {
-                // Chama a rota que criamos no backend (GET /orders/check-status/:id)
                 const check = await api.checkPaymentStatus(pixData.paymentId);
 
                 if (check.status === 'PAID') {
-                    // SE PAGOU: Limpa o PIX, fecha o modal de checkout e mostra a tela de sucesso
                     setPixData(null);
                     setIsFlowOpen(false);
                     setCart([]);
@@ -63,8 +61,16 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
     const addToast = (msg: string) => { const id = Date.now(); setToasts(p => [...p, { id, msg }]); setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000); };
     const addToCart = (product: any, quantity = 1) => { if (isMenuOnly) return; setCart(prev => [...prev, { ...product, quantity, key: `${product.id}-${Date.now()}` }]); addToast("Adicionado ao carrinho!"); setIsFlowOpen(true); };
 
+    // ============================================================
+    // 🛡️ AQUI ESTÁ A CORREÇÃO DA LIMPEZA DE ESTADO
+    // ============================================================
     const handleFinalizeOrder = async (formData: any, _proofFile: any, onSuccessCallback: any) => {
+        // 1. FAXINA: Limpa qualquer rastro da venda anterior antes de começar a nova
+        setPixData(null);
+        setSuccessOrder(null);
+
         setCheckoutLoading(true);
+
         try {
             const payload = {
                 ...formData,
@@ -75,17 +81,22 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
             const response = await api.createOrder(payload);
 
             if (response.pixData) {
-                // ➕ ALTERADO: Guardamos o pixData para iniciar o monitoramento (useEffect acima)
+                // 2. Salva o NOVO pix data
                 setPixData(response.pixData);
 
-                // Passa os dados para o FlowModal exibir o QR Code
+                // Passa os dados para o FlowModal exibir o QR Code NOVO
                 if (onSuccessCallback) onSuccessCallback(response);
             } else {
                 setSuccessOrder(response.sale);
                 setIsFlowOpen(false);
                 setCart([]);
             }
-        } catch (error) { console.error(error); alert("Erro ao criar pedido. Verifique CPF/Email."); } finally { setCheckoutLoading(false); }
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao criar pedido. Verifique os dados.");
+        } finally {
+            setCheckoutLoading(false);
+        }
     };
 
     const allProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -133,9 +144,9 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
             <div className="fixed top-6 right-6 flex flex-col items-end pointer-events-none z-[100] gap-2">{toasts.map(t => <Toast key={t.id} msg={t.msg} type="success" />)}</div>
             <ProductModal product={viewProduct} isOpen={!!viewProduct} onClose={() => setViewProduct(null)} onAddToCart={addToCart} isLightMode={isLightMode} isMenuOnly={isMenuOnly} />
 
-            {/* O FlowModal exibe o QR Code quando recebe os dados via callback */}
             {!isMenuOnly && (<FlowModal isOpen={isFlowOpen} onClose={() => setIsFlowOpen(false)} cart={cart} setCart={setCart} total={cart.reduce((a, b) => a + b.price * b.quantity, 0)} onConfirm={handleFinalizeOrder} loading={checkoutLoading} />)}
 
+            {/* Tela de Sucesso */}
             {successOrder && (
                 <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 animate-fade-in">
                     <div className="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
@@ -153,12 +164,12 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
                             <p className="text-6xl font-black tracking-widest text-purple-600 font-mono">#{successOrder?.orderCode}</p>
                         </div>
 
-                        <button
-                            onClick={() => window.location.href = '/'}
+                        <Link
+                            to="/"
                             className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase active:scale-95 transition-transform shadow-xl flex items-center justify-center gap-2"
                         >
                             Voltar para o Evento
-                        </button>
+                        </Link>
                     </div>
                 </div>
             )}
