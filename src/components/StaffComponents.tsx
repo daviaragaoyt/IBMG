@@ -1,17 +1,20 @@
-import React, { useState, useEffect, } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+// 👇 IMPORT THE NEW COMPONENT
+import { StoreOrders } from './StoreOrders';
+
 import {
     CheckCircle2, XCircle, MapPin, LogOut, HeartHandshake,
     Zap, Flame, Heart, Cross,
     Baby, HandMetal, Users, Plus,
     ShoppingBag, Coffee, CalendarClock, ArrowUpCircle,
-    PackageCheck, RefreshCw, Eye, LayoutDashboard,
-    AlertCircle, ArrowLeft, Lock,
+    RefreshCw, LayoutDashboard,
+    AlertCircle, ArrowLeft, Lock, DollarSign // Added DollarSign
 } from 'lucide-react';
 
-// --- UTILITÁRIOS ---
+// --- UTILITIES ---
 export const formatPhone = (v: string) => v.replace(/\D/g, "").slice(0, 11).replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
 export const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
@@ -24,7 +27,7 @@ export const getTheme = (isLightMode: boolean) => ({
     textSecondary: isLightMode ? '#666666' : '#9CA3AF',
 });
 
-// --- COMPONENTE TOAST ---
+// --- TOAST COMPONENT ---
 export const Toast = ({ msg, type }: any) => (
     <div className={`pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border-l-4 animate-slide-in-right bg-white text-gray-800 ${type === 'success' ? 'border-emerald-500' : type === 'warning' ? 'border-yellow-500' : 'border-red-500'}`}>
         {type === 'success' ? <CheckCircle2 className="text-emerald-500" size={20} /> : type === 'warning' ? <AlertCircle className="text-yellow-500" size={20} /> : <XCircle className="text-red-500" size={20} />}
@@ -32,7 +35,7 @@ export const Toast = ({ msg, type }: any) => (
     </div>
 );
 
-// --- LAYOUT PADRÃO DAS TELAS ---
+// --- DEFAULT SCREEN LAYOUT ---
 const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, selectedSpot, theme, children }: any) => {
     const currentSpotName = checkpoints.find((c: any) => c.id === selectedSpot)?.name || "Local Indefinido";
 
@@ -64,7 +67,7 @@ const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, s
     );
 };
 
-// --- COMPONENTE: CONTADOR DE REUNIÃO ---
+// --- COMPONENT: MEETING COUNTER ---
 const MeetingCounter = ({ theme }: any) => {
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -83,7 +86,7 @@ const MeetingCounter = ({ theme }: any) => {
     );
 };
 
-// --- TELA 1: RECEPÇÃO ---
+// --- SCREEN 1: RECEPTION ---
 export const ReceptionScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, handleCount, onLogout, theme }: any) => {
     const [mode, setMode] = useState<'BUTTONS' | 'SCAN'>('BUTTONS');
     const [personType, setPersonType] = useState<'VISITOR' | 'MEMBER'>('VISITOR');
@@ -121,53 +124,36 @@ export const ReceptionScreen = ({ user, checkpoints, selectedSpot, setSelectedSp
     );
 };
 
-// --- TELA 4: LOJA / CANTINA (COMPLETA COM CORREÇÕES) ---
 export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, addToast, onLogout, theme }: any) => {
-    // Estados
-    const [tab, setTab] = useState<'VENDA' | 'ONLINE' | 'RETIRADA'>('VENDA');
-    const [loading, setLoading] = useState(false);
+    // Navegação: 'POS' (Venda) ou 'ORDERS' (Gestão)
+    const [mode, setMode] = useState<'POS' | 'ORDERS'>('POS');
 
-    // Venda
+    // --- ESTADOS DO POS (Venda) ---
     const [products, setProducts] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
     const [isCheckout, setIsCheckout] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('');
     const [buyerName, setBuyerName] = useState('');
     const [proofFile, setProofFile] = useState<File | null>(null);
-
-    // Online/Auditoria
-    const [pendingOrders, setPendingOrders] = useState<any[]>([]);
-    const [selectedAudit, setSelectedAudit] = useState<any>(null);
-
-    // Retirada
-    const [scannedOrder, setScannedOrder] = useState<any>(null);
-    const [personOrders, setPersonOrders] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
 
     const category = user.department === 'STORE' ? 'LOJA' : 'CANTINA';
     const isCantina = category === 'CANTINA';
     const accentColor = isCantina ? '#F59E0B' : '#06B6D4';
     const Icon = isCantina ? Coffee : ShoppingBag;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+    // Carrega produtos
     useEffect(() => {
-        if (tab === 'VENDA') api.getProducts(category).then(setProducts).catch(console.error);
-        if (tab === 'ONLINE') fetchOrders();
-    }, [tab, category]);
-
-    useEffect(() => {
-        let interval: any;
-        if (tab === 'ONLINE') interval = setInterval(fetchOrders, 5000);
-        return () => clearInterval(interval);
-    }, [tab]);
-
-    const fetchOrders = () => { api.getPendingOrders().then(setPendingOrders).catch(() => { }); };
+        if (mode === 'POS') {
+            api.getProducts(category).then(setProducts).catch(console.error);
+        }
+    }, [mode, category]);
 
     const addToCart = (p: any) => setCart(prev => {
         const exist = prev.find(i => i.id === p.id);
         return exist ? prev.map(i => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i) : [...prev, { ...p, quantity: 1 }];
     });
 
-    // 1. VENDA BALCÃO (COM SUPORTE A FOTO)
     const handleFinishSale = async () => {
         if (!selectedSpot) return addToast("Selecione o local no topo!", 'error');
         setLoading(true);
@@ -183,176 +169,97 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
             await api.createOrder(formData);
             addToast(`Venda Registrada!`, 'success');
             setCart([]); setIsCheckout(false); setPaymentMethod(''); setProofFile(null); setBuyerName('');
-        } catch (e) { addToast("Erro ao processar", 'error'); }
-        finally { setLoading(false); }
+        } catch (e) {
+            addToast("Erro ao processar", 'error');
+        } finally {
+            setLoading(false);
+        }
     };
-
-    // 2. AUDITORIA ONLINE
-    const handleAuditAction = async (action: 'approve' | 'reject', orderCode: string) => {
-        if (!confirm(action === 'approve' ? "Confirmar pagamento?" : "Recusar pedido?")) return;
-        setLoading(true);
-        try {
-            if (action === 'approve') await api.payOrder(orderCode);
-            else await api.rejectOrder(orderCode);
-            addToast(action === 'approve' ? "Aprovado!" : "Rejeitado!", action === 'approve' ? 'success' : 'error');
-            setSelectedAudit(null);
-            fetchOrders();
-        } catch (e) { addToast("Erro na ação", 'error'); }
-        finally { setLoading(false); }
-    };
-
-    // 3. RETIRADA
-    const handleScan = async (code: string) => {
-        if (!code) return;
-        setLoading(true);
-        try {
-            if (code.length < 8) {
-                const data: any = await api.getOrder(code);
-                setScannedOrder(data); setPersonOrders(null);
-            } else {
-                const data: any = await api.getPersonOrders(code);
-                if (!data.orders || data.orders.length === 0) addToast("Sem pedidos pendentes", 'warning');
-                else { setPersonOrders({ ...data, personId: code }); setScannedOrder(null); }
-            }
-        } catch (e) { addToast("Não encontrado", 'error'); }
-        finally { setLoading(false); }
-    };
-
-    const handleDeliver = async (orderCode: string) => {
-        setLoading(true);
-        try {
-            await api.deliverOrder(orderCode);
-            addToast("Entregue!", 'success');
-            if (scannedOrder) setScannedOrder(null);
-            if (personOrders) setPersonOrders((prev: any) => ({ ...prev, orders: prev.orders.filter((o: any) => o.orderCode !== orderCode) }));
-        } catch (e) { addToast("Erro entrega", 'error'); }
-        finally { setLoading(false); }
-    };
-
-    const auditList = pendingOrders.filter(o => o.status === 'ANALYSIS');
-    const counterList = pendingOrders.filter(o => o.status === 'PENDING');
 
     return (
         <ScreenLayout user={user} title={isCantina ? "Cantina" : "Store"} icon={<Icon />} accentColor={accentColor} onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
-            <div className="flex bg-white/5 p-1 mx-6 mt-2 rounded-xl border border-white/10">
-                <button onClick={() => setTab('VENDA')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${tab === 'VENDA' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}>NOVA VENDA</button>
-                <button onClick={() => setTab('ONLINE')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${tab === 'ONLINE' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}>
-                    ONLINE {auditList.length > 0 && <span className="bg-red-500 text-white w-4 h-4 rounded-full text-[9px] flex items-center justify-center animate-pulse">{auditList.length}</span>}
+
+            {/* MENU DE NAVEGAÇÃO */}
+            <div className="flex bg-white/5 p-1 mx-4 mt-2 rounded-xl border border-white/10 shrink-0">
+                <button
+                    onClick={() => setMode('POS')}
+                    className={`flex-1 py-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${mode === 'POS' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-500 hover:bg-white/5'}`}
+                >
+                    <ShoppingBag size={16} /> NOVA VENDA
                 </button>
-                <button onClick={() => setTab('RETIRADA')} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${tab === 'RETIRADA' ? `bg-white text-gray-900 shadow` : 'text-gray-500'}`}><PackageCheck size={14} /> RETIRADA</button>
+                <button
+                    onClick={() => setMode('ORDERS')}
+                    className={`flex-1 py-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${mode === 'ORDERS' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-500 hover:bg-white/5'}`}
+                >
+                    <LayoutDashboard size={16} /> PEDIDOS / DELIVERY
+                </button>
             </div>
 
-            <div className="p-6 h-full pb-24">
-                {/* ABA VENDA */}
-                {tab === 'VENDA' && (
-                    <>
-                        <div className="grid grid-cols-2 gap-3 pb-20 overflow-y-auto">
+            <div className="h-full overflow-hidden relative">
+
+                {/* 👇 AQUI É ONDE O 'StoreOrders' É FINALMENTE USADO */}
+                {mode === 'ORDERS' && (
+                    <div className="h-full pb-20">
+                        <StoreOrders />
+                    </div>
+                )}
+
+                {/* TELA DE VENDA (POS) */}
+                {mode === 'POS' && (
+                    <div className="p-6 h-full pb-32 overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-2 gap-3">
                             {products.map(p => (
                                 <button key={p.id} onClick={() => addToCart(p)} className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border-b-4 border-gray-200 dark:border-gray-700 active:scale-95 transition-all flex flex-col items-center min-h-[120px]">
-                                    <span className="font-bold text-xs text-center uppercase mb-2 text-gray-700 dark:text-gray-300">{p.name}</span>
-                                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs font-black text-gray-900 dark:text-white">R$ {Number(p.price).toFixed(2)}</div>
-                                    {cart.find(i => i.id === p.id) && <div className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold shadow">{cart.find(i => i.id === p.id)?.quantity}</div>}
+                                    <span className="font-bold text-xs text-center uppercase mb-2 text-gray-700 dark:text-gray-300 line-clamp-2">{p.name}</span>
+                                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs font-black text-gray-900 dark:text-white mt-auto">R$ {Number(p.price).toFixed(2)}</div>
+                                    {cart.find(i => i.id === p.id) && <div className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold shadow animate-bounce">{cart.find(i => i.id === p.id)?.quantity}</div>}
                                 </button>
                             ))}
                         </div>
+
                         {cart.length > 0 && (
                             <div className="absolute bottom-0 left-0 w-full bg-white dark:bg-gray-900 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-[2rem] p-6 z-30 border-t border-gray-800 animate-slide-up">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-3xl font-black" style={{ color: accentColor }}>{formatCurrency(cart.reduce((acc, i) => acc + i.price * i.quantity, 0))}</h2>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase">Total a Receber</p>
+                                        <h2 className="text-3xl font-black" style={{ color: accentColor }}>{formatCurrency(cart.reduce((acc, i) => acc + i.price * i.quantity, 0))}</h2>
+                                    </div>
                                     <button onClick={() => setIsCheckout(true)} className="px-8 py-4 text-white rounded-2xl font-black shadow-lg hover:scale-105 transition-all" style={{ background: accentColor }}>RECEBER</button>
                                 </div>
                             </div>
                         )}
+
                         {isCheckout && (
-                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4 animate-fade-in">
-                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl animate-slide-up">
-                                    <h3 className="text-xl font-black text-center mb-4 text-gray-800 dark:text-white">Pagamento Balcão</h3>
-                                    <input type="text" placeholder="Nome (Opcional)" className="w-full p-3 mb-4 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800" value={buyerName} onChange={e => setBuyerName(e.target.value)} />
-                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
+                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 shadow-2xl animate-slide-up border border-white/10">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
+                                            <DollarSign className="text-green-500" /> Pagamento Balcão
+                                        </h3>
+                                        <button onClick={() => setIsCheckout(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500"><XCircle size={20} /></button>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Nome do Cliente (Opcional)"
+                                        className="w-full p-4 mb-4 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder-gray-500"
+                                        value={buyerName}
+                                        onChange={e => setBuyerName(e.target.value)}
+                                    />
+
+                                    <p className="text-xs font-bold text-gray-500 mb-2 uppercase">Forma de Pagamento</p>
+                                    <div className="grid grid-cols-3 gap-3 mb-6">
                                         {['DINHEIRO', 'PIX', 'CARTAO'].map(m => (
-                                            <button key={m} onClick={() => setPaymentMethod(m)} className={`p-3 rounded-xl border-2 text-[10px] font-bold ${paymentMethod === m ? 'border-green-500 bg-green-500/10 text-green-500' : 'border-gray-200 text-gray-400'}`}>{m}</button>
+                                            <button key={m} onClick={() => setPaymentMethod(m)} className={`p-3 rounded-xl border-2 text-[10px] font-bold transition-all ${paymentMethod === m ? 'border-green-500 bg-green-500/10 text-green-500 shadow-lg' : 'border-gray-200 dark:border-gray-700 text-gray-400'}`}>{m}</button>
                                         ))}
                                     </div>
-                                    <div className="mb-4">
-                                        <label className="block w-full cursor-pointer text-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5">
-                                            <span className="text-xs font-bold text-gray-500">{proofFile ? `📄 ${proofFile.name}` : 'Anexar Foto (Opcional)'}</span>
-                                            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files && setProofFile(e.target.files[0])} />
-                                        </label>
-                                    </div>
-                                    <button onClick={handleFinishSale} disabled={!paymentMethod || loading} className="w-full py-4 bg-green-600 text-white rounded-xl font-black shadow-lg disabled:opacity-50">{loading ? <RefreshCw className="animate-spin mx-auto" /> : 'CONFIRMAR'}</button>
-                                    <button onClick={() => setIsCheckout(false)} className="w-full mt-3 py-3 text-gray-400 font-bold text-xs">Cancelar</button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
 
-                {/* ABA ONLINE */}
-                {tab === 'ONLINE' && (
-                    <div className="space-y-3 pb-20 overflow-y-auto">
-                        <h3 className="text-xs font-bold uppercase opacity-50 mb-2">Pedidos Online ({auditList.length})</h3>
-                        {auditList.length === 0 ? <p className="text-center opacity-30 text-xs py-4">Nenhum pedido online.</p> : auditList.map(order => (
-                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-l-4 border-l-yellow-500 border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center">
-                                <div><p className="font-bold text-gray-800 dark:text-white uppercase">{order.buyerName}</p><p className="text-xs text-gray-500">R$ {Number(order.total).toFixed(2)} • PIX</p></div>
-                                <button onClick={() => setSelectedAudit(order)} className="px-4 py-2 bg-yellow-600 text-white text-xs font-bold rounded-xl shadow flex items-center gap-2 animate-pulse"><Eye size={14} /> VER FOTO</button>
-                            </div>
-                        ))}
-                        <h3 className="text-xs font-bold uppercase opacity-50 mb-2 mt-6">Fila do Balcão ({counterList.length})</h3>
-                        {counterList.map(order => (
-                            <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border-l-4 border-l-gray-500 border-gray-200 dark:border-gray-700 shadow-sm flex justify-between items-center opacity-60">
-                                <div><p className="font-bold text-gray-800 dark:text-white">{order.buyerName}</p><p className="text-xs text-gray-500">R$ {Number(order.total).toFixed(2)}</p></div>
-                                <span className="text-[10px] font-bold text-gray-400">PAGAR NO CAIXA</span>
-                            </div>
-                        ))}
-                        {selectedAudit && (
-                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-                                <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                                    <div className="flex-1 overflow-y-auto p-4 bg-gray-200 dark:bg-black flex flex-col items-center">
-                                        <p className="text-center text-xs font-bold uppercase mb-4 text-gray-500 w-full">Comprovante</p>
-                                        {selectedAudit.proofUrl ? (
-                                            <img src={`${API_URL}${selectedAudit.proofUrl}`} className="w-full rounded-xl mb-4 shadow-lg border-2 border-white dark:border-gray-700 object-contain bg-black" alt="Comprovante" />
-                                        ) : (
-                                            <div className="h-40 w-full flex items-center justify-center bg-gray-300 dark:bg-gray-800 rounded-xl mb-4 text-xs font-bold opacity-50">Sem Imagem</div>
-                                        )}
-                                        <div className="w-full bg-white dark:bg-gray-800 p-4 rounded-xl space-y-2 border border-gray-200 dark:border-gray-700">
-                                            <p className="text-center font-black text-xl mb-2 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-800 dark:text-white">Total: {formatCurrency(Number(selectedAudit.total))}</p>
-                                            {selectedAudit.items.map((i: any) => (<div key={i.id} className="text-sm font-bold text-gray-800 dark:text-white flex justify-between"><span>{i.product.name}</span><span>x{i.quantity}</span></div>))}
-                                        </div>
-                                    </div>
-                                    <div className="p-4 grid grid-cols-2 gap-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-                                        <button onClick={() => handleAuditAction('reject', selectedAudit.orderCode)} className="py-4 bg-red-100 text-red-600 rounded-xl font-black text-sm hover:bg-red-200">REJEITAR</button>
-                                        <button onClick={() => handleAuditAction('approve', selectedAudit.orderCode)} className="py-4 bg-green-600 text-white rounded-xl font-black text-sm shadow-lg hover:bg-green-700">APROVAR</button>
-                                        <button onClick={() => setSelectedAudit(null)} className="col-span-2 py-3 text-gray-400 font-bold text-xs">Voltar</button>
-                                    </div>
+                                    <button onClick={handleFinishSale} disabled={!paymentMethod || loading} className="w-full py-4 bg-green-600 text-white rounded-xl font-black shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-lg">
+                                        {loading ? <RefreshCw className="animate-spin mx-auto" /> : 'CONFIRMAR VENDA'}
+                                    </button>
                                 </div>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {/* ABA RETIRADA */}
-                {tab === 'RETIRADA' && (
-                    <div className="flex flex-col items-center">
-                        {!scannedOrder && !personOrders && (
-                            <div className="w-full max-w-[280px] aspect-square bg-black rounded-[2rem] overflow-hidden relative shadow-2xl border-4 mb-6" style={{ borderColor: accentColor }}>
-                                <Scanner onScan={(d) => d[0]?.rawValue && handleScan(d[0].rawValue)} />
-                            </div>
-                        )}
-                        {(scannedOrder || personOrders) && (
-                            <div className="w-full bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-2xl border-2 animate-slide-up" style={{ borderColor: '#10B981' }}>
-                                <h2 className="text-center font-black text-xl mb-4 text-gray-800 dark:text-white">{scannedOrder ? scannedOrder.buyerName : personOrders.personName}</h2>
-                                <div className="space-y-3 mb-6">
-                                    {(scannedOrder ? [scannedOrder] : personOrders.orders).map((o: any) => (
-                                        <div key={o.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                                            <span className="font-mono font-black text-purple-500">#{o.orderCode}</span>
-                                            {o.status === 'PAID' ? <button onClick={() => handleDeliver(o.orderCode)} className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg shadow">ENTREGAR</button> : <span className="text-xs font-bold text-red-500">PENDENTE</span>}
-                                        </div>
-                                    ))}
-                                </div>
-                                <button onClick={() => { setScannedOrder(null); setPersonOrders(null); }} className="w-full py-3 text-gray-400 font-bold text-xs">Ler Outro</button>
-                            </div>
-                        )}
-                        <p className="text-center opacity-50 mt-10 text-xs">Use o scanner ou busque pelo código para entregar.</p>
                     </div>
                 )}
             </div>
@@ -446,47 +353,105 @@ export const PrayerScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot,
     );
 };
 
-// --- TELA DE LOGIN ---
+// --- TELA DE LOGIN (COM ANIMAÇÃO DE MOUSE) ---
 const StaffLogin = ({ onLogin, isLightMode }: any) => {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Efeito de Spotlight do Mouse
+    const mouseRef = useRef<HTMLDivElement>(null);
+    const requestRef = useRef<number>(null);
+    const targetPos = useRef({ x: 0, y: 0 });
+    const currentPos = useRef({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => { targetPos.current = { x: e.clientX, y: e.clientY }; };
+        const animate = () => {
+            const ease = 0.08;
+            currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
+            currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
+            if (mouseRef.current) mouseRef.current.style.transform = `translate(${currentPos.current.x}px, ${currentPos.current.y}px) translate(-50%, -50%)`;
+            requestRef.current = requestAnimationFrame(animate);
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        requestRef.current = requestAnimationFrame(animate);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
+
     const theme = getTheme(isLightMode);
     const gradient = 'linear-gradient(135deg, #A800E0, #FF3D00)';
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault(); setLoading(true); setError('');
-        try { const data = await api.login(email); onLogin(data); } catch (err) { setError('Acesso negado.'); } finally { setLoading(false); }
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            const data = await api.login(email);
+            onLogin(data);
+        } catch (err) {
+            setError('Acesso negado. Verifique o e-mail.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-500" style={{ background: theme.bgApp }}>
+            <div ref={mouseRef} className={`fixed top-0 left-0 w-[800px] h-[800px] rounded-full pointer-events-none blur-[100px] z-0 transition-opacity duration-500 ${isLightMode ? 'opacity-30 mix-blend-multiply' : 'opacity-20 mix-blend-screen'}`} style={{ background: gradient }}></div>
+
             <div className="w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl border relative z-10 backdrop-blur-md" style={{ background: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(26, 5, 36, 0.7)', borderColor: theme.borderColor }}>
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg text-white transform hover:scale-110 transition-transform duration-300" style={{ background: gradient }}><Lock size={32} /></div>
+
                 <h2 className="text-3xl font-black text-center mb-2 tracking-tight" style={{ color: theme.textPrimary }}>Staff Access</h2>
+                <p className="text-center text-xs font-bold uppercase tracking-widest opacity-50 mb-8" style={{ color: theme.textSecondary }}>Área Exclusiva</p>
+
                 <form onSubmit={handleLogin} className="space-y-5">
-                    <input type="email" required placeholder="Seu e-mail de staff" className="w-full p-5 rounded-2xl border outline-none font-bold transition-all focus:scale-[1.02] focus:shadow-lg" style={{ borderColor: theme.borderColor, color: theme.textPrimary, background: theme.inputBg }} value={email} onChange={e => setEmail(e.target.value)} />
-                    <button disabled={loading} className="w-full py-5 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all hover:brightness-110" style={{ background: gradient }}>{loading ? <RefreshCw className="animate-spin mx-auto" /> : 'ACESSAR'}</button>
+                    <div className="relative group">
+                        <input type="email" required placeholder="Seu e-mail de staff"
+                            className="w-full p-5 rounded-2xl border outline-none font-bold transition-all focus:scale-[1.02] focus:shadow-lg"
+                            style={{ borderColor: theme.borderColor, color: theme.textPrimary, background: theme.inputBg }}
+                            value={email} onChange={e => setEmail(e.target.value)}
+                        />
+                    </div>
+                    <button disabled={loading} className="w-full py-5 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all hover:brightness-110" style={{ background: gradient }}>
+                        {loading ? <RefreshCw className="animate-spin mx-auto" /> : 'ACESSAR'}
+                    </button>
                 </form>
+
                 {error && <div className="mt-4 p-3 rounded-xl bg-red-500/10 text-red-500 text-center text-sm font-bold flex items-center gap-2 justify-center animate-pulse"><AlertCircle size={16} />{error}</div>}
-                <Link to="/ekklesia" className="flex items-center justify-center gap-2 mt-8 text-xs font-bold opacity-50 hover:opacity-100 transition-opacity" style={{ color: theme.textPrimary }}><ArrowLeft size={12} /> Voltar ao Início</Link>
+
+                <Link to="/ekklesia" className="flex items-center justify-center gap-2 mt-8 text-xs font-bold opacity-50 hover:opacity-100 transition-opacity" style={{ color: theme.textPrimary }}>
+                    <ArrowLeft size={12} /> Voltar ao Início
+                </Link>
             </div>
         </div>
     );
 };
 
-// --- COMPONENTE PRINCIPAL ---
+// --- COMPONENTE PRINCIPAL (ROTEADOR DE DEPARTAMENTOS) ---
 export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
-    const [staffUser, setStaffUser] = useState<any>(() => { const s = localStorage.getItem('ekklesia_staff_user'); return s ? JSON.parse(s) : null; });
+    const [staffUser, setStaffUser] = useState<any>(() => {
+        const s = localStorage.getItem('ekklesia_staff_user');
+        return s ? JSON.parse(s) : null;
+    });
+
     const [checkpoints, setCheckpoints] = useState<any[]>([]);
     const [selectedSpot, setSelectedSpot] = useState('');
     const [toasts, setToasts] = useState<any[]>([]);
+
     const theme = getTheme(isLightMode);
 
+    // Carrega Locais ao logar
     useEffect(() => {
         if (staffUser) {
             api.getCheckpoints().then((data: any) => {
                 setCheckpoints(data);
+                // Tenta selecionar o local automaticamente baseado no departamento
                 if (data.length > 0 && staffUser.department) {
                     const dept = staffUser.department.toUpperCase();
                     const match = data.find((c: any) => {
@@ -510,27 +475,51 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
     };
 
-    const handleLogout = () => { setStaffUser(null); localStorage.removeItem('ekklesia_staff_user'); };
-    console.log(handleLogout)
+    const handleLogout = () => {
+        setStaffUser(null);
+        localStorage.removeItem('ekklesia_staff_user');
+    };
+
     const handleCount = async (payload: any, label: string) => {
         if (!selectedSpot) return addToast("Selecione o Local no topo!", 'error');
         if (navigator.vibrate) navigator.vibrate(50);
-        try { await api.count({ checkpointId: selectedSpot, quantity: 1, ...payload }); addToast(label, 'success'); } catch (e) { addToast("Erro de conexão", 'error'); }
+        try {
+            await api.count({ checkpointId: selectedSpot, quantity: 1, ...payload });
+            addToast(label, 'success');
+        } catch (e) {
+            addToast("Erro de conexão", 'error');
+        }
     };
 
     if (!staffUser) return <StaffLogin onLogin={(user: any) => { setStaffUser(user); localStorage.setItem('ekklesia_staff_user', JSON.stringify(user)); }} isLightMode={isLightMode} />;
 
-    const commonProps = { user: staffUser, checkpoints, selectedSpot, setSelectedSpot, handleCount, theme, addToast };
+    // Props comuns para todas as telas
+    const commonProps = {
+        user: staffUser,
+        checkpoints,
+        selectedSpot,
+        setSelectedSpot,
+        handleCount,
+        onLogout: handleLogout,
+        theme,
+        addToast
+    };
+
     const dept = staffUser.department?.toUpperCase();
 
     return (
         <div className="h-full">
-            <div className="fixed top-24 right-4 z-50 flex flex-col gap-2 pointer-events-none w-auto">{toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast msg={t.msg} type={t.type} /></div>)}</div>
+            {/* TOASTS FLUTUANTES */}
+            <div className="fixed top-24 right-4 z-50 flex flex-col gap-2 pointer-events-none w-auto">
+                {toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast msg={t.msg} type={t.type} /></div>)}
+            </div>
+
+            {/* ROTEAMENTO CONDICIONAL */}
             {dept === 'CONSOLIDATION' ? <ConsolidationScreen {...commonProps} /> :
                 dept === 'KIDS' ? <KidsScreen {...commonProps} /> :
                     dept === 'RECEPTION' ? <ReceptionScreen {...commonProps} /> :
                         (dept === 'PRAYER' || dept === 'PROPHETIC') ? <PrayerScreen {...commonProps} /> :
-                            (dept === 'STORE' || dept === 'CANTINA') ? <StoreScreen {...commonProps} /> :
+                            (dept === 'STORE' || dept === 'CANTINA') ? <StoreScreen {...commonProps} /> : // <--- A TELA COMPLETA DE VENDAS/AUDITORIA
                                 <EvangelismScreen {...commonProps} />}
         </div>
     );

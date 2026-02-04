@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, User, QrCode, Trash2, Loader2, Mail, CreditCard } from 'lucide-react';
-// Note que NÃO importamos api aqui. O Modal é "burro", só exibe dados.
-import { formatCurrency } from '../../components/StaffComponents';
-import { maskPhone } from './config';
+import { formatCurrency } from '../../components/StaffComponents'; // Adjust path if needed
+import { maskPhone } from './config'; // Adjust path if needed
 
 const maskCPF = (value: string) => {
     return value
@@ -15,24 +14,24 @@ const maskCPF = (value: string) => {
 
 export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, loading }: any) => {
     const [step, setStep] = useState<'CART' | 'REGISTER' | 'PIX_WAIT'>('CART');
+
+    // 👇 1. Added manualType state (defaults to VISITOR)
+    const [manualType, setManualType] = useState<'VISITOR' | 'MEMBER'>('VISITOR');
+
     const [formData, setFormData] = useState({ name: '', phone: '', age: '', email: '', cpf: '', church: '' });
     const [pixData, setPixData] = useState<any>(null);
     const [copySuccess, setCopySuccess] = useState(false);
 
-    // Reset ao abrir
+    // Reset on open
     useEffect(() => {
         if (isOpen) {
             setStep('CART');
             setPixData(null);
             setCopySuccess(false);
+            setManualType('VISITOR'); // Reset type default
             if (cart.length === 0) onClose();
         }
     }, [isOpen]);
-
-    // ❌ REMOVI O POLLING DAQUI.
-    // Agora quem vigia o pagamento é o PublicCatalog.tsx (o Pai).
-    // Quando o Pai detectar o pagamento, ele vai chamar setIsFlowOpen(false),
-    // o que desmonta este modal automaticamente. Sem conflitos.
 
     if (!isOpen) return null;
 
@@ -41,13 +40,14 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
             return alert("Preencha Nome, CPF, Email e WhatsApp.");
         }
 
-        // Chama o Pai para criar o pedido
-        onConfirm(formData, null, (data: any) => {
+        // 👇 2. Sending manualType along with formData
+        const payload = { ...formData, manualType };
+
+        // Calls Parent to create order
+        onConfirm(payload, null, (data: any) => {
             if (data?.pixData) {
                 setPixData(data.pixData);
                 setStep('PIX_WAIT');
-                // O Pai vai começar a monitorar o pagamento agora.
-                // Nós apenas ficamos aqui exibindo o QR Code.
             }
         });
     };
@@ -65,6 +65,7 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
 
             <div className="relative w-full max-w-md bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up text-gray-900 h-[85vh] md:max-h-[90vh] flex flex-col">
+                {/* Header */}
                 <div className="p-5 flex justify-between items-center shrink-0 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-2 text-purple-600">
                         {step === 'PIX_WAIT' ? <QrCode /> : step === 'REGISTER' ? <User /> : <ShoppingBag />}
@@ -76,6 +77,7 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 bg-white">
+                    {/* STEP 1: CART */}
                     {step === 'CART' && (
                         <div className="space-y-6">
                             {cart.map((item: any, idx: number) => (
@@ -97,27 +99,61 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
                         </div>
                     )}
 
+                    {/* STEP 2: REGISTER FORM */}
                     {step === 'REGISTER' && (
                         <div className="space-y-4">
+
+                            {/* 👇 3. VISUAL SELECTOR BUTTONS */}
+                            <div className="grid grid-cols-2 gap-3 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setManualType('VISITOR')}
+                                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${manualType === 'VISITOR'
+                                        ? 'border-purple-500 bg-purple-500/10 text-purple-700'
+                                        : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <span className="text-2xl">👤</span>
+                                    <span className="font-bold text-xs uppercase">Sou Visitante</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setManualType('MEMBER')}
+                                    className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${manualType === 'MEMBER'
+                                        ? 'border-purple-500 bg-purple-500/10 text-purple-700'
+                                        : 'border-gray-100 bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <span className="text-2xl">👤</span>
+                                    <span className="font-bold text-xs uppercase">Sou Membro</span>
+                                </button>
+                            </div>
+
                             <input type="text" placeholder="NOME COMPLETO *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+
                             <div className="relative">
                                 <CreditCard size={18} className="absolute left-4 top-4 text-gray-400" />
                                 <input type="text" placeholder="CPF *" className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })} />
                             </div>
+
                             <div className="relative">
                                 <Mail size={18} className="absolute left-4 top-4 text-gray-400" />
                                 <input type="email" placeholder="E-MAIL *" className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
+
                             <div className="flex gap-2">
                                 <input type="text" placeholder="WHATSAPP *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: maskPhone(e.target.value) })} />
                                 <input type="number" placeholder="IDADE" className="w-24 p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} />
                             </div>
+
                             <button onClick={handleGeneratePix} disabled={loading} className="w-full py-4 bg-green-600 text-white font-black rounded-xl flex justify-center items-center gap-2 active:scale-95 transition-transform">
                                 {loading ? <Loader2 className="animate-spin" /> : "GERAR PIX"}
                             </button>
                         </div>
                     )}
 
+                    {/* STEP 3: PIX DISPLAY */}
                     {step === 'PIX_WAIT' && pixData && (
                         <div className="text-center space-y-4 animate-fade-in">
                             <Loader2 className="animate-spin mx-auto text-purple-600" />
