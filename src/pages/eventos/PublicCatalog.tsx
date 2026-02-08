@@ -157,9 +157,10 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
                         </div>
 
                         <h2 className="text-3xl font-black uppercase mb-2 text-gray-900 tracking-tighter">Pedido Pago!</h2>
-                        <p className="text-gray-500 mb-8 font-medium">Seu pedido foi confirmado. Mostre o código abaixo na Livraria.</p>
+                        <p className="text-gray-500 mb-8 font-medium">Seu pedido foi confirmado. Mostre o código abaixo no Hall da igreja.</p>
 
                         <div className="bg-gray-50 p-6 rounded-3xl mb-8 border border-gray-100">
+                            <p className="text-3xl font-black tracking-widest text-purple-600 font-mono">TIRE PRINT</p>
                             <p className="text-xs font-bold uppercase opacity-40 mb-2 tracking-widest text-gray-900">Código de Retirada</p>
                             <p className="text-6xl font-black tracking-widest text-purple-600 font-mono">#{successOrder?.orderCode}</p>
                         </div>
