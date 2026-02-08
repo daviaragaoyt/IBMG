@@ -18,6 +18,7 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [toasts, setToasts] = useState<any[]>([]);
+    const [isStaff, setIsStaff] = useState(false);
 
     // Estado para monitorar o pagamento PIX
     const [pixData, setPixData] = useState<any>(null);
@@ -33,11 +34,23 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
         setLoading(true);
         const dbCategory = type === 'STORE' ? 'LOJA' : type;
         api.getProducts(dbCategory).then(data => setProducts(data || [])).catch(() => setProducts([])).finally(() => setLoading(false));
+
+        const saved = localStorage.getItem('ekklesia_staff_user');
+        if (saved) {
+            try {
+                const user = JSON.parse(saved);
+                if (user.role === 'STAFF') {
+                    setIsStaff(true);
+                }
+            } catch (e) {
+                console.error("Erro parser user", e);
+            }
+        }
     }, [type]);
 
     // Polling (Verifica se o PIX foi pago a cada 3s)
     useEffect(() => {
-        if (!pixData) return; // Só roda se tiver um PIX pendente
+        if (!pixData || isStaff) return; // Se for staff, não precisa de polling (já nasce pago)
 
         const interval = setInterval(async () => {
             try {
@@ -144,7 +157,7 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
             <div className="fixed top-6 right-6 flex flex-col items-end pointer-events-none z-[100] gap-2">{toasts.map(t => <Toast key={t.id} msg={t.msg} type="success" />)}</div>
             <ProductModal product={viewProduct} isOpen={!!viewProduct} onClose={() => setViewProduct(null)} onAddToCart={addToCart} isLightMode={isLightMode} isMenuOnly={isMenuOnly} />
 
-            {!isMenuOnly && (<FlowModal isOpen={isFlowOpen} onClose={() => setIsFlowOpen(false)} cart={cart} setCart={setCart} total={cart.reduce((a, b) => a + b.price * b.quantity, 0)} onConfirm={handleFinalizeOrder} loading={checkoutLoading} />)}
+            {!isMenuOnly && (<FlowModal isOpen={isFlowOpen} onClose={() => setIsFlowOpen(false)} cart={cart} setCart={setCart} total={cart.reduce((a, b) => a + b.price * b.quantity, 0)} onConfirm={handleFinalizeOrder} loading={checkoutLoading} isStaff={isStaff} />)}
 
             {/* Tela de Sucesso */}
             {successOrder && (

@@ -55,19 +55,28 @@ export const KidsScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, h
 
 export const EvangelismScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, handleCount, onLogout, theme }: any) => {
     const commonProps = { gender: 'M', type: 'VISITOR', marketingSource: 'Ação Externa' };
+    const [outcomes, setOutcomes] = useState({ isSalvation: false, isHealing: false, isDeliverance: false });
+
+    const toggle = (key: keyof typeof outcomes) => setOutcomes(prev => ({ ...prev, [key]: !prev[key] }));
+
+    const submit = (payload: any, label: string) => {
+        handleCount({ ...payload, ...outcomes }, label);
+        setOutcomes({ isSalvation: false, isHealing: false, isDeliverance: false }); // Reset after count
+    };
+
     return (
         <ScreenLayout user={user} title="Evangelismo" icon={<Zap />} accentColor="#F97316" onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
             <div className="p-6 flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => handleCount({ ...commonProps, ageGroup: 'ADULTO', gender: 'M' }, '+1 Homem')} className="bg-blue-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-blue-800"><span className="text-4xl">👨</span><span className="font-black text-xs tracking-widest mt-1">HOMEM</span></button>
-                    <button onClick={() => handleCount({ ...commonProps, ageGroup: 'ADULTO', gender: 'F' }, '+1 Mulher')} className="bg-pink-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-pink-800"><span className="text-4xl">👩</span><span className="font-black text-xs tracking-widest mt-1">MULHER</span></button>
+                    <button onClick={() => submit({ ...commonProps, ageGroup: 'ADULTO', gender: 'M' }, '+1 Homem')} className="bg-blue-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-blue-800"><span className="text-4xl">👨</span><span className="font-black text-xs tracking-widest mt-1">HOMEM</span></button>
+                    <button onClick={() => submit({ ...commonProps, ageGroup: 'ADULTO', gender: 'F' }, '+1 Mulher')} className="bg-pink-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-pink-800"><span className="text-4xl">👩</span><span className="font-black text-xs tracking-widest mt-1">MULHER</span></button>
                 </div>
                 <div className="p-5 rounded-2xl border border-dashed border-orange-500/30 bg-orange-500/5">
-                    <div className="flex items-center justify-center gap-2 mb-4"><Flame size={16} className="text-orange-500" /><span className="text-xs font-black uppercase text-orange-500">Painel Sobrenatural</span></div>
+                    <div className="flex items-center justify-center gap-2 mb-4"><Flame size={16} className="text-orange-500" /><span className="text-xs font-black uppercase text-orange-500">Painel Sobrenatural (Selecione antes)</span></div>
                     <div className="grid grid-cols-3 gap-3">
-                        <button onClick={() => handleCount({ marketingSource: 'VIDA_SALVA' }, 'Salvação!')} className="bg-emerald-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-emerald-800"><Cross size={18} /><span className="text-[9px] font-black uppercase mt-1">Salvação</span></button>
-                        <button onClick={() => handleCount({ marketingSource: 'CURA' }, 'Cura!')} className="bg-red-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-red-800"><Heart size={18} /><span className="text-[9px] font-black uppercase mt-1">Cura</span></button>
-                        <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Libertação!')} className="bg-orange-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-orange-800"><Flame size={18} /><span className="text-[9px] font-black uppercase mt-1">Libertação</span></button>
+                        <button onClick={() => toggle('isSalvation')} className={`py-4 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isSalvation ? 'bg-emerald-500 border-emerald-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Cross size={18} /><span className="text-[9px] font-black uppercase mt-1">Salvação</span></button>
+                        <button onClick={() => toggle('isHealing')} className={`py-4 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isHealing ? 'bg-red-500 border-red-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Heart size={18} /><span className="text-[9px] font-black uppercase mt-1">Cura</span></button>
+                        <button onClick={() => toggle('isDeliverance')} className={`py-4 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isDeliverance ? 'bg-orange-500 border-orange-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Flame size={18} /><span className="text-[9px] font-black uppercase mt-1">Libertação</span></button>
                     </div>
                 </div>
             </div>
@@ -98,17 +107,28 @@ export const ConsolidationScreen = ({ user, onLogout, addToast, theme }: any) =>
 };
 
 export const PrayerScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, handleCount, onLogout, theme }: any) => {
+    const [outcomes, setOutcomes] = useState({ isSalvation: false, isHealing: false, isDeliverance: false });
+    const toggle = (key: keyof typeof outcomes) => setOutcomes(prev => ({ ...prev, [key]: !prev[key] }));
+
+    const submit = (payload: any, label: string) => {
+        handleCount({ ...payload, ...outcomes }, label);
+        setOutcomes({ isSalvation: false, isHealing: false, isDeliverance: false });
+    };
+
     return (
         <ScreenLayout user={user} title="Ministério Profético" icon={<HandMetal />} accentColor="#8B5CF6" onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
             <div className="p-6 flex flex-col h-full justify-center pb-20 gap-8">
-                <div className="grid grid-cols-3 gap-4">
-                    <button onClick={() => handleCount({ marketingSource: 'VIDA_SALVA' }, 'Salvação!')} className="bg-emerald-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-emerald-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Cross size={32} /><span className="text-xs font-black uppercase mt-2">Salvação</span></button>
-                    <button onClick={() => handleCount({ marketingSource: 'CURA' }, 'Cura!')} className="bg-red-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-red-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Heart size={32} /><span className="text-xs font-black uppercase mt-2">Cura</span></button>
-                    <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Libertação!')} className="bg-orange-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-orange-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Flame size={32} /><span className="text-xs font-black uppercase mt-2">Libertação</span></button>
+                <div className="p-5 rounded-2xl border border-dashed border-purple-500/30 bg-purple-500/5">
+                    <div className="flex items-center justify-center gap-2 mb-4"><Zap size={16} className="text-purple-500" /><span className="text-xs font-black uppercase text-purple-500">O que aconteceu?</span></div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => toggle('isSalvation')} className={`py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isSalvation ? 'bg-emerald-500 border-emerald-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Cross size={18} /><span className="text-[9px] font-black uppercase mt-1">Salvação</span></button>
+                        <button onClick={() => toggle('isHealing')} className={`py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isHealing ? 'bg-red-500 border-red-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Heart size={18} /><span className="text-[9px] font-black uppercase mt-1">Cura</span></button>
+                        <button onClick={() => toggle('isDeliverance')} className={`py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 transition-all ${outcomes.isDeliverance ? 'bg-orange-500 border-orange-700 scale-105' : 'bg-gray-700 border-gray-900 opacity-50'}`}><Flame size={18} /><span className="text-[9px] font-black uppercase mt-1">Libertação</span></button>
+                    </div>
                 </div>
                 <div className="flex gap-4">
-                    <button onClick={() => handleCount({ type: 'VISITOR' }, '+1 Visitante')} className="flex-1 py-4 rounded-xl bg-gray-800 text-white font-bold text-sm border border-white/10 hover:bg-gray-700 transition-all">PASSOU VISITANTE</button>
-                    <button onClick={() => handleCount({ type: 'MEMBER' }, '+1 Membro')} className="flex-1 py-4 rounded-xl bg-gray-800 text-white font-bold text-sm border border-white/10 hover:bg-gray-700 transition-all">PASSOU MEMBRO</button>
+                    <button onClick={() => submit({ type: 'VISITOR' }, '+1 Visitante')} className="flex-1 py-4 rounded-xl bg-gray-800 text-white font-bold text-sm border border-white/10 hover:bg-gray-700 transition-all border-b-4 border-gray-950">PASSOU VISITANTE</button>
+                    <button onClick={() => submit({ type: 'MEMBER' }, '+1 Membro')} className="flex-1 py-4 rounded-xl bg-gray-800 text-white font-bold text-sm border border-white/10 hover:bg-gray-700 transition-all border-b-4 border-gray-950">PASSOU MEMBRO</button>
                 </div>
             </div>
         </ScreenLayout>

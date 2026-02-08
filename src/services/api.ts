@@ -8,7 +8,8 @@ async function request(path: string, options: RequestInit = {}) {
     const savedUser = localStorage.getItem('ekklesia_staff_user');
     if (savedUser) {
         try {
-            const { token } = JSON.parse(savedUser);
+            const user = JSON.parse(savedUser);
+            const token = user.token || user.id;
             if (token) headers['Authorization'] = `Bearer ${token}`;
         } catch (e) { console.error("Erro token", e); }
     }

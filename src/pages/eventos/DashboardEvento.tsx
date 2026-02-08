@@ -5,8 +5,8 @@ import {
     Line, ComposedChart, Legend
 } from 'recharts';
 import {
-    Users, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Activity, Baby, Clock, UserCheck, Target, Layers,
-    HeartHandshake, Home, CalendarDays, MapPin, Share2, ArrowLeft
+    Users, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Activity, Clock, UserCheck, Target, Layers,
+    Home, CalendarDays, MapPin, Share2, ArrowLeft
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -22,10 +22,13 @@ const COLORS = {
 // --- TYPES ---
 interface CheckpointData { total: number; visitor: number; member: number; name?: string; }
 interface StatsState {
-    totalEntrance: number; kidsTotal: number; visitors: number; members: number;
+    totalEntrance: number; visitors: number; members: number;
     gender: { M: number; F: number }; age: { CRIANCA: number; JOVEM: number; ADULTO: number };
     marketing: Record<string, number>; church: Record<string, number>; checkpointsList: CheckpointData[];
-    evangelism: { total: number }; consolidation: { total: number; accepted: number; reconciled: number };
+    evangelism: { total: number };
+    salvation: { total: number; M: number; F: number; VISITOR: number; MEMBER: number };
+    healing: { total: number; M: number; F: number; VISITOR: number; MEMBER: number };
+    deliverance: { total: number; M: number; F: number; VISITOR: number; MEMBER: number };
 }
 
 export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, data?: any }) => {
@@ -99,10 +102,13 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
 
     const stats = useMemo<StatsState>(() => {
         const s: StatsState = {
-            totalEntrance: 0, kidsTotal: 0, visitors: 0, members: 0,
+            totalEntrance: 0, visitors: 0, members: 0,
             gender: { M: 0, F: 0 }, age: { CRIANCA: 0, JOVEM: 0, ADULTO: 0 },
             marketing: {}, church: {}, checkpointsList: [],
-            evangelism: { total: 0 }, consolidation: { total: 0, accepted: 0, reconciled: 0 }
+            evangelism: { total: 0 },
+            salvation: { total: 0, M: 0, F: 0, VISITOR: 0, MEMBER: 0 },
+            healing: { total: 0, M: 0, F: 0, VISITOR: 0, MEMBER: 0 },
+            deliverance: { total: 0, M: 0, F: 0, VISITOR: 0, MEMBER: 0 }
         };
 
         if (!localData?.checkpointsData || !localData.checkpointsData[selectedDay]) return s;
@@ -113,14 +119,14 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
             Object.entries(dataSet).forEach(([name, d]: [string, any]) => {
                 if (d.total !== undefined) {
                     const nameLower = name.toLowerCase();
-                    const isKids = nameLower.includes('kids') || nameLower.includes('criança');
+                    // const isKids = nameLower.includes('kids') || nameLower.includes('criança'); // REMOVIDO
                     const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção') || nameLower.includes('total');
                     const isKombi = nameLower.includes('kombi') || nameLower.includes('evangelismo');
 
                     if (name === 'Total') s.totalEntrance = d.total;
                     else if (isEntrance && !s.totalEntrance) s.totalEntrance += d.total;
 
-                    if (isKids) s.kidsTotal += (d.total || 0);
+                    // if (isKids) s.kidsTotal += (d.total || 0); // REMOVIDO
                     if (isKombi) s.evangelism.total += (d.total || 0);
 
                     if (name !== 'Total') {
@@ -134,10 +140,21 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                         const ch = d.church;
                         if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
 
-                        if (nameLower.includes('consolida') || nameLower.includes('decis') || nameLower.includes('altar')) {
-                            s.consolidation.total += (d.total || 0);
-                            s.consolidation.accepted += (d.accepted || 0);
-                            s.consolidation.reconciled += (d.reconciled || 0);
+                        // Lógica de Desfechos Espirituais
+                        if (d.salvation) {
+                            s.salvation.total += d.salvation.total || 0;
+                            s.salvation.M += d.salvation.M || 0;
+                            s.salvation.F += d.salvation.F || 0;
+                        }
+                        if (d.healing) {
+                            s.healing.total += d.healing.total || 0;
+                            s.healing.M += d.healing.M || 0;
+                            s.healing.F += d.healing.F || 0;
+                        }
+                        if (d.deliverance) {
+                            s.deliverance.total += d.deliverance.total || 0;
+                            s.deliverance.M += d.deliverance.M || 0;
+                            s.deliverance.F += d.deliverance.F || 0;
                         }
                     }
 
@@ -152,13 +169,41 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
         };
 
         if (localData.checkpointsData[selectedDay]) aggregate(localData.checkpointsData[selectedDay]);
+
+        // Adicionando LOJA manualmente à lista de checkpoints para exibição
+        if (localData?.salesStats?.byCategory?.LOJA) {
+            cpMap['Loja'] = {
+                total: localData.salesStats.byCategory.LOJA,
+                visitor: localData.salesStats.demographics?.VISITOR || 0, // Estimativa baseada no total de vendas
+                member: localData.salesStats.demographics?.MEMBER || 0,
+                name: 'Loja'
+            };
+        }
+
         s.checkpointsList = Object.values(cpMap).sort((a, b) => b.total - a.total);
         if (s.totalEntrance === 0 && (s.visitors + s.members) > 0) s.totalEntrance = s.visitors + s.members;
 
         return s;
     }, [localData, selectedDay]);
 
-    const accumulatedTotal = stats.totalEntrance;
+    // CALCULO DO TOTAL GERAL (Soma de todos os 'Total' de todos os dias disponíveis)
+    const grandTotal = useMemo(() => {
+        if (!localData?.checkpointsData) return 0;
+        let total = 0;
+        Object.values(localData.checkpointsData).forEach((dayData: any) => {
+            if (dayData['Total']) total += dayData['Total'].total || 0;
+            else {
+                // Fallback se não tiver 'Total' explícito
+                Object.values(dayData).forEach((val: any) => {
+                    if (val.total && val.name !== 'Total') total += val.total;
+                });
+            }
+        });
+        return total;
+    }, [localData]);
+
+
+    const accumulatedTotal = stats.totalEntrance; // Mantendo compatibilidade, mas agora representa o dia selecionado
 
     const hourlyData = localData?.timeline?.[selectedDay]
         ? Object.keys(localData.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(h => ({ name: `${h}h`, value: localData.timeline[selectedDay][h] }))
@@ -200,9 +245,13 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                         <Link to="/ekklesia/admin" className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-xl border ${theme.cardBorder} ${theme.cardBg} hover:opacity-80 transition-all group shrink-0`}>
                             <ArrowLeft size={20} className={`${theme.text} group-hover:-translate-x-1 transition-transform`} />
                         </Link>
-                        <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate">
-                            Dashboard <span className="text-[#A855F7]">Eventos</span>
-                        </h1>
+                        <div className="flex flex-col">
+                            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate">
+                                Dashboard <span className="text-[#A855F7]">Eventos</span>
+                            </h1>
+                            <span className={`text-sm md:text-base font-bold ${theme.mutedText}`}>Total Geral da Conferência: <span className="text-purple-500">{grandTotal} Pessoas</span></span>
+                        </div>
+
                     </div>
 
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-6 w-full">
@@ -256,14 +305,16 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                 <Crown size={180} className="absolute -top-10 -right-10 text-white opacity-20" />
                                 <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full text-white"><CalendarDays size={12} /> Dia {selectedDay}</span>
                                 <span className="text-7xl md:text-8xl font-black tracking-tighter drop-shadow-sm text-white">{stats.totalEntrance}</span>
-                                <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Check-ins Totais</div>
+                                <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Check-ins Neste Dia</div>
                             </div>
-                            <Card className="h-56 md:h-64"><CardTitle icon={<Baby size={18} />} title="Kids" color="green" /><span className="text-5xl md:text-7xl font-black">{stats.kidsTotal}</span><div className="w-16 h-1.5 bg-green-500/20 rounded-full mt-4 overflow-hidden"><div className="h-full bg-green-500 rounded-full w-2/3"></div></div></Card>
+
                             <Card className="h-56 md:h-64"><CardTitle icon={<Clock size={18} />} title="Pico de Entrada" color="orange" /><span className="text-4xl md:text-6xl font-black">{peakData.hour}</span><span className="text-xs font-bold text-orange-500 mt-2 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">{String(peakData.val)} p/h</span></Card>
                             <Card className="h-56 md:h-64 justify-around py-8">
                                 <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                                 <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                             </Card>
+                            {/* REMOVIDO CARD KIDS */}
+                            <Card className="h-56 md:h-64"><CardTitle icon={<Target size={18} />} title="Evangelismo" color="yellow" /><span className="text-5xl md:text-7xl font-black text-yellow-500">{stats.evangelism.total}</span><span className="text-xs font-bold text-yellow-500/70 uppercase tracking-widest">Alcançados</span></Card>
                         </div>
                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                             <Card className="xl:col-span-8 h-[350px] md:h-[500px] !items-stretch !p-4 md:!p-8">
@@ -288,9 +339,70 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                 {activeTab === 'DEPTS' && (
                     <div className="space-y-6 animate-slide-up">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <Card className={`h-64 border-l-4 !border-l-emerald-500`}><CardTitle icon={<HeartHandshake size={20} />} title="Consolidação" color="emerald" /><div className="flex items-end gap-2"><span className="text-6xl font-black text-emerald-500">{stats.consolidation.total}</span></div><div className="flex gap-2 mt-4 w-full px-4"><div className={`flex-1 ${isLightMode ? 'bg-emerald-100' : 'bg-emerald-900/20'} rounded p-2 text-center`}><span className="block text-xl font-bold text-emerald-500">{stats.consolidation.accepted}</span><span className="text-[10px] uppercase font-bold opacity-50 text-emerald-500">Aceitou</span></div><div className={`flex-1 ${isLightMode ? 'bg-yellow-100' : 'bg-yellow-900/20'} rounded p-2 text-center`}><span className="block text-xl font-bold text-yellow-500">{stats.consolidation.reconciled}</span><span className="text-[10px] uppercase font-bold opacity-50 text-yellow-500">Reconc.</span></div></div></Card>
-                            <Card className="h-64 border-l-4 !border-l-green-500"><CardTitle icon={<Baby size={20} />} title="Kids" color="green" /><span className="text-6xl font-black text-green-500">{stats.kidsTotal}</span><span className={`text-xs font-bold opacity-60 mt-2 ${theme.mutedText}`}>Crianças Cuidadas</span></Card>
-                            <Card className="h-64 border-l-4 !border-l-blue-500"><CardTitle icon={<Home size={20} />} title="Recepção" color="blue" /><span className="text-6xl font-black text-blue-500">{stats.totalEntrance}</span><span className={`text-xs font-bold opacity-60 mt-2 ${theme.mutedText}`}>Total Entradas</span></Card>
+                            {/* Renderização Dinâmica de Ministérios/Departamentos */}
+                            {stats.checkpointsList.map((dept) => {
+                                const nameLower = dept.name?.toLowerCase() || '';
+                                let icon = Briefcase;
+                                let color = "text-gray-500";
+                                let borderColor = "border-l-gray-500";
+
+                                // Mapeamento FOCADO e ATUALIZADO
+                                if (nameLower.includes('evangelismo') || nameLower.includes('kombi')) {
+                                    icon = Target; color = "text-yellow-500"; borderColor = "!border-l-yellow-500";
+                                } else if (nameLower.includes('profétic') || nameLower.includes('profetic')) {
+                                    icon = Zap; color = "text-purple-500"; borderColor = "!border-l-purple-500";
+                                } else if (nameLower.includes('mártires') || nameLower.includes('martires')) {
+                                    icon = Crown; color = "text-red-600"; borderColor = "!border-l-red-600";
+                                } else if (nameLower.includes('recepção') || nameLower.includes('entrada')) {
+                                    icon = Home; color = "text-blue-500"; borderColor = "!border-l-blue-500";
+                                } else if (nameLower.includes('loja')) {
+                                    icon = Briefcase; color = "text-emerald-500"; borderColor = "!border-l-emerald-500";
+                                }
+
+                                const Icon = icon;
+
+                                return (
+                                    <Card key={dept.name} className={`h-64 border-l-4 ${borderColor}`}>
+                                        <CardTitle icon={<Icon size={20} />} title={dept.name} color={color.replace('text-', '').replace('-500', '').replace('-600', '')} />
+                                        <div className="flex items-end gap-2">
+                                            <span className={`text-6xl font-black ${color}`}>{dept.total}</span>
+                                            {nameLower.includes('loja') && <span className="text-xs font-bold text-gray-500 mb-2">Vendas/Items</span>}
+                                        </div>
+
+                                        <div className="flex gap-2 mt-4 w-full px-4 text-center justify-center">
+                                            <div className="flex flex-col">
+                                                <span className={`text-xl font-bold ${color}`}>{dept.visitor}</span>
+                                                <span className={`text-[10px] uppercase font-bold opacity-50 ${theme.mutedText}`}>Visitantes</span>
+                                            </div>
+                                            <div className="w-[1px] bg-gray-300 dark:bg-white/10 mx-2"></div>
+                                            <div className="flex flex-col">
+                                                <span className={`text-xl font-bold ${color}`}>{dept.member}</span>
+                                                <span className={`text-[10px] uppercase font-bold opacity-50 ${theme.mutedText}`}>Membros</span>
+                                            </div>
+                                        </div>
+
+                                        {/* EXIBIÇÃO DE DADOS ESPIRITUAIS - CRUZAMENTO */}
+                                        {(nameLower.includes('evangelismo') || nameLower.includes('kombi') || nameLower.includes('profétic') || nameLower.includes('profetic')) && (
+                                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10 w-full px-2">
+                                                <div className="grid grid-cols-3 gap-1 text-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-emerald-500 font-black text-lg">{stats.salvation.total}</span>
+                                                        <span className="text-[8px] uppercase font-bold opacity-60">Salvação</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-red-500 font-black text-lg">{stats.healing.total}</span>
+                                                        <span className="text-[8px] uppercase font-bold opacity-60">Cura</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-orange-500 font-black text-lg">{stats.deliverance.total}</span>
+                                                        <span className="text-[8px] uppercase font-bold opacity-60">Libertação</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Card>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

@@ -19,7 +19,21 @@ export const ProductSkeleton = () => (
 
 // EXPORTAÇÃO 2: O Card Principal
 export const ProductCard = ({ product, onOpen, onAdd, isMenuOnly, isLightMode, index }: any) => {
-    const images = product.images || (product.imageUrl ? [product.imageUrl] : []);
+    // CORREÇÃO IMAGEM: Adiciona prefixo se não for URL completa
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+    const fixUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        // Remove barra inicial duplicada se houver
+        const cleanPath = url.startsWith('/') ? url.substring(1) : url;
+        // Remove 'uploads' duplicado se já vier no path (ex: uploads/imagem.png -> apenas imagem.png se a base já tiver uploads, ou ajusta conforme rota estática)
+        // O backend serve estático em /uploads.
+        return `${API_URL}/uploads/${cleanPath.replace('uploads/', '')}`;
+    };
+
+    const rawImages = product.images || (product.imageUrl ? [product.imageUrl] : []);
+    const images = rawImages.map(fixUrl);
 
     return (
         <div

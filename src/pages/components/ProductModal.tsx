@@ -12,7 +12,18 @@ export const ProductModal = ({ product, isOpen, onClose, onAddToCart, isLightMod
     const bgModal = isLightMode ? 'bg-white' : 'bg-[#1A0524] border border-white/10';
     const textMain = isLightMode ? 'text-gray-900' : 'text-white';
     const btnSecondary = isLightMode ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-white/5 hover:bg-white/10 text-white';
-    const images = product.images || (product.imageUrl ? [product.imageUrl] : []);
+
+    // CORREÇÃO IMAGEM: Adiciona prefixo se não for URL completa
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const fixUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        const cleanPath = url.startsWith('/') ? url.substring(1) : url;
+        return `${API_URL}/uploads/${cleanPath.replace('uploads/', '')}`;
+    };
+
+    const rawImages = product.images || (product.imageUrl ? [product.imageUrl] : []);
+    const images = rawImages.map(fixUrl);
 
     const handleAdd = () => {
         if (isMenuOnly) return;

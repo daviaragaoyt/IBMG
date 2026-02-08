@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, X, User, QrCode, Trash2, Loader2, Mail, CreditCard } from 'lucide-react';
-import { formatCurrency } from '../../components/StaffComponents'; // Adjust path if needed
-import { maskPhone } from './config'; // Adjust path if needed
+import { formatCurrency } from '../../components/StaffComponents';
+import { maskPhone } from './config';
 
 const maskCPF = (value: string) => {
     return value
@@ -12,7 +12,8 @@ const maskCPF = (value: string) => {
         .replace(/(-\d{2})\d+?$/, '$1');
 };
 
-export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, loading }: any) => {
+export const FlowModal = (props: any) => {
+    const { isOpen, onClose, cart, setCart, total, onConfirm, loading, isStaff } = props;
     const [step, setStep] = useState<'CART' | 'REGISTER' | 'PIX_WAIT'>('CART');
 
     // 👇 1. Added manualType state (defaults to VISITOR)
@@ -36,8 +37,11 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
     if (!isOpen) return null;
 
     const handleGeneratePix = async () => {
-        if (!formData.name || !formData.cpf || !formData.email || !formData.phone) {
-            return alert("Preencha Nome, CPF, Email e WhatsApp.");
+        // Se for STAFF, permite sem dados (apenas confirmação)
+        if (!isStaff) {
+            if (!formData.name || !formData.cpf || !formData.email || !formData.phone) {
+                return alert("Preencha Nome, CPF, Email e WhatsApp.");
+            }
         }
 
         // 👇 2. Sending manualType along with formData
@@ -130,25 +134,25 @@ export const FlowModal = ({ isOpen, onClose, cart, setCart, total, onConfirm, lo
                                 </button>
                             </div>
 
-                            <input type="text" placeholder="NOME COMPLETO *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                            <input type="text" placeholder={isStaff ? "NOME (Opcional)" : "NOME COMPLETO *"} className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
 
                             <div className="relative">
                                 <CreditCard size={18} className="absolute left-4 top-4 text-gray-400" />
-                                <input type="text" placeholder="CPF *" className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })} />
+                                <input type="text" placeholder={isStaff ? "CPF (Opcional)" : "CPF *"} className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })} />
                             </div>
 
                             <div className="relative">
                                 <Mail size={18} className="absolute left-4 top-4 text-gray-400" />
-                                <input type="email" placeholder="E-MAIL *" className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                <input type="email" placeholder={isStaff ? "E-MAIL (Opcional)" : "E-MAIL *"} className="w-full p-4 pl-12 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
 
                             <div className="flex gap-2">
-                                <input type="text" placeholder="WHATSAPP *" className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: maskPhone(e.target.value) })} />
+                                <input type="text" placeholder={isStaff ? "WHATSAPP (Opcional)" : "WHATSAPP *"} className="w-full p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: maskPhone(e.target.value) })} />
                                 <input type="number" placeholder="IDADE" className="w-24 p-4 bg-gray-50 rounded-xl border font-bold focus:ring-2 ring-purple-500 outline-none" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} />
                             </div>
 
-                            <button onClick={handleGeneratePix} disabled={loading} className="w-full py-4 bg-green-600 text-white font-black rounded-xl flex justify-center items-center gap-2 active:scale-95 transition-transform">
-                                {loading ? <Loader2 className="animate-spin" /> : "GERAR PIX"}
+                            <button onClick={handleGeneratePix} disabled={loading} className={`w-full py-4 ${isStaff ? 'bg-purple-600' : 'bg-green-600'} text-white font-black rounded-xl flex justify-center items-center gap-2 active:scale-95 transition-transform`}>
+                                {loading ? <Loader2 className="animate-spin" /> : (isStaff ? "CONFIRMAR PAGAMENTO (STAFF)" : "GERAR PIX")}
                             </button>
                         </div>
                     )}
