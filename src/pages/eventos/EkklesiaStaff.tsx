@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { getTheme, Toast, StaffLogin } from '../../components/Staff/StaffShared';
-import { ReceptionScreen, KidsScreen, EvangelismScreen, ConsolidationScreen, PrayerScreen } from '../../components/Staff/DepartmentScreens';
+import { ReceptionScreen, EvangelismScreen, PrayerScreen, MartyrsScreen } from '../../components/Staff/DepartmentScreens';
 import { StoreScreen } from '../../components/Staff/StoreScreen';
 
 export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
@@ -21,15 +21,22 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 setCheckpoints(data);
                 if (data.length > 0 && staffUser.department) {
                     const dept = staffUser.department.toUpperCase();
+
+                    // Helper para normalizar strings (remover acentos)
+                    const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
                     const match = data.find((c: any) => {
-                        const name = c.name.toUpperCase();
-                        if (dept === 'KIDS' && name.includes('KIDS')) return true;
+                        const name = normalize(c.name);
+
                         if (dept === 'RECEPTION' && (name.includes('RECEP') || name.includes('ENTRADA'))) return true;
-                        if (dept === 'EVANGELISM' && name.includes('KOMBI')) return true;
-                        if ((dept === 'PRAYER' || dept === 'PROPHETIC') && (name.includes('TENDA') || name.includes('PROFETICA') || name.includes('MARTIRES'))) return true;
-                        if (dept === 'STORE' && (name.includes('CANTINA') || name.includes('LIVRARIA') || name.includes('PSALMS'))) return true;
+                        if (dept === 'EVANGELISM' && (name.includes('KOMBI') || name.includes('EVANGELISMO'))) return true;
+                        if (dept === 'MARTIRES' && name.includes('MARTIRES')) return true;
+                        if ((dept === 'PRAYER' || dept === 'PROPHETIC') && (name.includes('TENDA') || name.includes('PROFETICA') || name.includes('ORACAO'))) return true;
+                        if (dept === 'STORE' && (name.includes('STORE') || name.includes('LIVRARIA') || name.includes('LOJA'))) return true;
+
                         return false;
                     });
+
                     if (match) setSelectedSpot(match.id);
                 }
             }).catch(console.error);
@@ -69,12 +76,11 @@ export const EkklesiaStaff = ({ isLightMode }: { isLightMode: boolean }) => {
                 {toasts.map(t => <div key={t.id} className="pointer-events-auto"><Toast msg={t.msg} type={t.type} /></div>)}
             </div>
 
-            {dept === 'CONSOLIDATION' ? <ConsolidationScreen {...commonProps} /> :
-                dept === 'KIDS' ? <KidsScreen {...commonProps} /> :
-                    dept === 'RECEPTION' ? <ReceptionScreen {...commonProps} /> :
-                        (dept === 'PRAYER' || dept === 'PROPHETIC') ? <PrayerScreen {...commonProps} /> :
-                            (dept === 'STORE' || dept === 'CANTINA') ? <StoreScreen {...commonProps} /> :
-                                <EvangelismScreen {...commonProps} />}
+            {dept === 'RECEPTION' ? <ReceptionScreen {...commonProps} /> :
+                dept === 'MARTIRES' ? <MartyrsScreen {...commonProps} /> :
+                    (dept === 'PRAYER' || dept === 'PROPHETIC') ? <PrayerScreen {...commonProps} /> :
+                        dept === 'STORE' ? <StoreScreen {...commonProps} /> :
+                            <EvangelismScreen {...commonProps} />}
         </div>
     );
 };

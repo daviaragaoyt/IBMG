@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ScreenLayout, formatCurrency } from './StaffShared';
 import { StoreOrders } from '../StoreOrders';
-import { ShoppingBag, Coffee, LayoutDashboard, DollarSign, XCircle, RefreshCw } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, DollarSign, XCircle, RefreshCw } from 'lucide-react';
 
 export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, addToast, onLogout, theme }: any) => {
     const [mode, setMode] = useState<'POS' | 'ORDERS'>('POS');
@@ -13,10 +13,10 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
     const [buyerName, setBuyerName] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const category = user.department === 'STORE' ? 'LOJA' : 'CANTINA';
-    const isCantina = category === 'CANTINA';
-    const accentColor = isCantina ? '#F59E0B' : '#06B6D4';
-    const Icon = isCantina ? Coffee : ShoppingBag;
+    const category = 'LOJA';
+    const isCantina = false;
+    const accentColor = '#06B6D4';
+    const Icon = ShoppingBag;
     const [buyerEmail, setBuyerEmail] = useState('');
     const [buyerCPF, setBuyerCPF] = useState('');
     const [generateLink, setGenerateLink] = useState(false); // Toggle para decidir se quer link ou apenas registro

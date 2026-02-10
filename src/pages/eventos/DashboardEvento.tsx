@@ -1,12 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    Line, ComposedChart, Legend
+    PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    Users, RefreshCw, Crown, Zap, TrendingUp, Briefcase, Activity, Clock, UserCheck, Target, Layers,
-    Home, CalendarDays, MapPin, Share2, ArrowLeft
+    Users, RefreshCw, Crown, Zap, Briefcase, Activity, UserCheck, Target,
+    Home, CalendarDays, ArrowLeft
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -20,7 +19,7 @@ const COLORS = {
 };
 
 // --- TYPES ---
-interface CheckpointData { total: number; visitor: number; member: number; name?: string; }
+interface CheckpointData { total: number; visitor: number; member: number; gender?: { M: number; F: number }; name?: string; }
 interface StatsState {
     totalEntrance: number; visitors: number; members: number;
     gender: { M: number; F: number }; age: { CRIANCA: number; JOVEM: number; ADULTO: number };
@@ -34,7 +33,7 @@ interface StatsState {
 export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, data?: any }) => {
     const [localData, setLocalData] = useState<any>(data || null);
     const [loading, setLoading] = useState(!data);
-    const [activeTab, setActiveTab] = useState<'LIVE' | 'DEPTS' | 'PESSOAS' | 'MARKETING'>('LIVE');
+    const [activeTab, setActiveTab] = useState<'LIVE' | 'DEPTS' | 'PESSOAS'>('LIVE');
 
     const todayFormatted = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const [selectedDay, setSelectedDay] = useState(todayFormatted);
@@ -119,14 +118,14 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
             Object.entries(dataSet).forEach(([name, d]: [string, any]) => {
                 if (d.total !== undefined) {
                     const nameLower = name.toLowerCase();
-                    // const isKids = nameLower.includes('kids') || nameLower.includes('criança'); // REMOVIDO
-                    const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção') || nameLower.includes('total');
-                    const isKombi = nameLower.includes('kombi') || nameLower.includes('evangelismo');
+                    const isEntrance = nameLower.includes('entrada') || nameLower.includes('recepção');
+                    const isKombi = nameLower.includes('kombi') || nameLower.includes('evangelismo') || nameLower.includes('externo');
 
-                    if (name === 'Total') s.totalEntrance = d.total;
-                    else if (isEntrance && !s.totalEntrance) s.totalEntrance += d.total;
+                    // SOMA APENAS RECEPÇÃO NO TOTAL GERAL (PEDIDO DO USUÁRIO)
+                    if (isEntrance && name !== 'Total') {
+                        s.totalEntrance += d.total || 0;
+                    }
 
-                    // if (isKids) s.kidsTotal += (d.total || 0); // REMOVIDO
                     if (isKombi) s.evangelism.total += (d.total || 0);
 
                     if (name !== 'Total') {
@@ -135,8 +134,6 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                         if (d.gender) { s.gender.M += d.gender.M || 0; s.gender.F += d.gender.F || 0; }
                         if (d.age) { s.age.CRIANCA += d.age.CRIANCA || 0; s.age.JOVEM += d.age.JOVEM || 0; s.age.ADULTO += d.age.ADULTO || 0; }
 
-                        const mkt = d.marketing || d.marketingSource;
-                        if (mkt) Object.entries(mkt).forEach(([k, v]) => s.marketing[k || 'Outros'] = (s.marketing[k || 'Outros'] || 0) + (v as number));
                         const ch = d.church;
                         if (ch) Object.entries(ch).forEach(([k, v]) => s.church[k || 'Sem Igreja'] = (s.church[k || 'Sem Igreja'] || 0) + (v as number));
 
@@ -159,10 +156,14 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                     }
 
                     if (name !== 'Total') {
-                        if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, name: name };
+                        if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, gender: { M: 0, F: 0 }, name: name };
                         cpMap[name].total += d.total || 0;
                         cpMap[name].visitor += d.type?.VISITOR || 0;
                         cpMap[name].member += d.type?.MEMBER || 0;
+                        if (d.gender && cpMap[name].gender) {
+                            cpMap[name].gender.M += d.gender.M || 0;
+                            cpMap[name].gender.F += d.gender.F || 0;
+                        }
                     }
                 } else { aggregate(d); }
             });
@@ -177,6 +178,19 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                 visitor: localData.salesStats.demographics?.VISITOR || 0, // Estimativa baseada no total de vendas
                 member: localData.salesStats.demographics?.MEMBER || 0,
                 name: 'Loja'
+            };
+        }
+
+        // --- GARANTIR QUE CASA DOS MÁRTIRES APAREÇA (Zerado se não houver dados) ---
+        const hasMartires = Object.keys(cpMap).some(k => k.toLowerCase().includes('martires') || k.toLowerCase().includes('mártires'));
+
+        if (!hasMartires) {
+            cpMap['Casa dos Mártires'] = {
+                total: 0,
+                visitor: 0,
+                member: 0,
+                gender: { M: 0, F: 0 },
+                name: 'Casa dos Mártires'
             };
         }
 
@@ -202,34 +216,8 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
         return total;
     }, [localData]);
 
-
-    const accumulatedTotal = stats.totalEntrance; // Mantendo compatibilidade, mas agora representa o dia selecionado
-
-    const hourlyData = localData?.timeline?.[selectedDay]
-        ? Object.keys(localData.timeline[selectedDay]).sort((a, b) => parseInt(a) - parseInt(b)).map(h => ({ name: `${h}h`, value: localData.timeline[selectedDay][h] }))
-        : [];
-
-    const peakData = useMemo(() => {
-        if (!localData?.timeline?.[selectedDay]) return { hour: '--', val: 0 };
-        const entries = Object.entries(localData.timeline[selectedDay]) as [string, number][];
-        const sorted = entries.sort((a, b) => b[1] - a[1]);
-        return sorted.length ? { hour: `${sorted[0][0]}h`, val: Number(sorted[0][1]) } : { hour: '--', val: 0 };
-    }, [localData, selectedDay]);
-
     const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
     const ageData = [{ name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids }, { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' }, { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }];
-    const marketingData = Object.entries(stats.marketing).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
-    const churchData = Object.entries(stats.church).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6);
-
-    const evolutionData = daysToShow.map((day: string) => {
-        let total = 0; let vis = 0;
-        if (localData?.checkpointsData?.[day]) {
-            const d = localData.checkpointsData[day];
-            if (d['Total']) { total = d['Total'].total; vis = d['Total'].type.VISITOR; }
-            else { Object.values(d).forEach((val: any) => { if (val.total && val !== d['Total']) { total += val.total; vis += val.type?.VISITOR || 0; } }); }
-        }
-        return { name: day, total, visitantes: vis };
-    });
 
     if (loading || !localData) return <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}><RefreshCw className="animate-spin text-purple-600" size={32} /></div>;
 
@@ -260,7 +248,6 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                 {[
                                     { id: 'LIVE', label: 'Operacional', icon: Activity, color: 'text-[#F87171]' },
                                     { id: 'PESSOAS', label: 'Perfil', icon: Users, color: 'text-blue-400' },
-                                    { id: 'MARKETING', label: 'Marketing', icon: Target, color: 'text-purple-400' },
                                     { id: 'DEPTS', label: 'Ministérios', icon: Briefcase, color: 'text-emerald-400' }
                                 ].map((tab) => (
                                     <button
@@ -303,12 +290,12 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
                             <div className={`col-span-1 p-6 md:p-8 rounded-[1.5rem] flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden h-56 md:h-64 border ${theme.cardBorder}`} style={{ background: 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)' }}>
                                 <Crown size={180} className="absolute -top-10 -right-10 text-white opacity-20" />
-                                <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full text-white"><CalendarDays size={12} /> Dia {selectedDay}</span>
-                                <span className="text-7xl md:text-8xl font-black tracking-tighter drop-shadow-sm text-white">{stats.totalEntrance}</span>
-                                <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Check-ins Neste Dia</div>
+                                <span className="text-xs font-bold uppercase tracking-widest mb-2 opacity-90 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full text-white"><CalendarDays size={12} /> Total do Evento</span>
+                                <span className="text-7xl md:text-8xl font-black tracking-tighter drop-shadow-sm text-white">{localData?.totalEventEntrance || stats.totalEntrance}</span>
+                                <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Check-ins Acumulados</div>
                             </div>
 
-                            <Card className="h-56 md:h-64"><CardTitle icon={<Clock size={18} />} title="Pico de Entrada" color="orange" /><span className="text-4xl md:text-6xl font-black">{peakData.hour}</span><span className="text-xs font-bold text-orange-500 mt-2 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">{String(peakData.val)} p/h</span></Card>
+
                             <Card className="h-56 md:h-64 justify-around py-8">
                                 <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>VISITANTES</span><span className="font-black text-orange-500">{stats.visitors}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats.visitors / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
                                 <div className="w-full px-6"><div className="flex justify-between mb-2"><span className={`text-xs font-bold ${theme.mutedText}`}>MEMBROS</span><span className="font-black text-purple-500">{stats.members}</span></div><div className={`h-2 ${isLightMode ? 'bg-gray-200' : 'bg-white/5'} rounded-full overflow-hidden`}><div className="h-full bg-purple-500 rounded-full" style={{ width: `${(stats.members / (stats.totalEntrance || 1)) * 100}%` }}></div></div></div>
@@ -317,10 +304,6 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                             <Card className="h-56 md:h-64"><CardTitle icon={<Target size={18} />} title="Evangelismo" color="yellow" /><span className="text-5xl md:text-7xl font-black text-yellow-500">{stats.evangelism.total}</span><span className="text-xs font-bold text-yellow-500/70 uppercase tracking-widest">Alcançados</span></Card>
                         </div>
                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                            <Card className="xl:col-span-8 h-[350px] md:h-[500px] !items-stretch !p-4 md:!p-8">
-                                <div className="flex items-center gap-3 mb-6"><Activity className="text-red-500" /><h3 className={`font-bold text-lg ${theme.text}`}>Fluxo em Tempo Real</h3></div>
-                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><AreaChart data={hourlyData}><defs><linearGradient id="colorLive" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.live} stopOpacity={0.3} /><stop offset="95%" stopColor={COLORS.live} stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.chartGrid} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '700', fill: theme.chartText }} dy={10} /><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${theme.chartTooltipBorder}`, backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Area type="monotone" dataKey="value" stroke={COLORS.live} strokeWidth={4} fill="url(#colorLive)" /></AreaChart></ResponsiveContainer></div>
-                            </Card>
                             <Card className="xl:col-span-4 h-[400px] md:h-[500px] !justify-start !items-stretch !p-0 overflow-hidden">
                                 <div className={`p-6 ${isLightMode ? 'bg-gray-50' : 'bg-[#250833]'} border-b ${theme.cardBorder} flex items-center gap-2`}><Zap className="text-yellow-500" size={18} /><span className={`font-bold text-sm ${theme.text}`}>RAIO-X DETALHADO</span></div>
                                 <div className="overflow-y-auto p-4 space-y-3 h-full rounded-b-[1.5rem] no-scrollbar">
@@ -363,10 +346,10 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
 
                                 return (
                                     <Card key={dept.name} className={`h-64 border-l-4 ${borderColor}`}>
-                                        <CardTitle icon={<Icon size={20} />} title={dept.name} color={color.replace('text-', '').replace('-500', '').replace('-600', '')} />
+                                        <CardTitle icon={<Icon size={20} />} title={dept.name || 'Local Indefinido'} color={color.replace('text-', '').replace('-500', '').replace('-600', '')} />
                                         <div className="flex items-end gap-2">
                                             <span className={`text-6xl font-black ${color}`}>{dept.total}</span>
-                                            {nameLower.includes('loja') && <span className="text-xs font-bold text-gray-500 mb-2">Vendas/Items</span>}
+                                            {nameLower.includes('loja') ? <span className="text-xs font-bold text-gray-500 mb-2">Vendas/Items</span> : <span className="text-xs font-bold text-gray-500 mb-2">Pessoas</span>}
                                         </div>
 
                                         <div className="flex gap-2 mt-4 w-full px-4 text-center justify-center">
@@ -380,6 +363,20 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                                 <span className={`text-[10px] uppercase font-bold opacity-50 ${theme.mutedText}`}>Membros</span>
                                             </div>
                                         </div>
+
+                                        {/* EXIBIÇÃO DE GÊNERO (Novidade - Corrigido para Números Absolutos) */}
+                                        {(dept.gender && (dept.gender.M > 0 || dept.gender.F > 0 || dept.total === 0)) && (
+                                            <div className="flex gap-2 mt-2 w-full px-4 text-center justify-center opacity-80">
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-bold ${color}`}>{dept.gender.M}</span>
+                                                    <span className={`text-[9px] uppercase font-bold opacity-50 ${theme.mutedText}`}>Homens</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-bold ${color}`}>{dept.gender.F}</span>
+                                                    <span className={`text-[9px] uppercase font-bold opacity-50 ${theme.mutedText}`}>Mulheres</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* EXIBIÇÃO DE DADOS ESPIRITUAIS - CRUZAMENTO */}
                                         {(nameLower.includes('evangelismo') || nameLower.includes('kombi') || nameLower.includes('profétic') || nameLower.includes('profetic')) && (
@@ -421,31 +418,11 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                 <CardTitle icon={<UserCheck size={18} />} title="Faixa Etária" color="indigo" />
                                 <ResponsiveContainer width="100%" height="100%"><BarChart data={ageData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} tick={{ fill: theme.chartText, fontSize: 11, fontWeight: '700' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="value" barSize={30} radius={[0, 10, 10, 0] as any}>{ageData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar></BarChart></ResponsiveContainer>
                             </Card>
-                            <Card className="h-[400px] md:col-span-2 lg:col-span-1">
-                                <CardTitle icon={<MapPin size={18} />} title="Top Igrejas" color="orange" />
-                                <ResponsiveContainer width="100%" height="100%"><BarChart data={churchData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} tick={{ fill: theme.chartText, fontSize: 10, fontWeight: '700' }} axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="value" barSize={20} radius={[0, 10, 10, 0] as any} fill="#F97316" /></BarChart></ResponsiveContainer>
-                            </Card>
                         </div>
                     </div>
                 )}
 
-                {activeTab === 'MARKETING' && (
-                    <div className="space-y-6 animate-slide-up">
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                            <div className="xl:col-span-1 p-8 rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-xl flex flex-col items-center justify-center text-center h-80 relative overflow-hidden border border-white/10">
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div><Target size={48} className="mb-4 opacity-50" /><span className="text-white/80 font-bold uppercase tracking-widest text-xs mb-2">Alcance do Dia {selectedDay}</span><span className="text-7xl font-black tracking-tighter mb-4 drop-shadow-lg">{accumulatedTotal}</span><div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10"><TrendingUp size={16} /> <span className="text-xs font-bold">Pessoas Impactadas</span></div>
-                            </div>
-                            <Card className="h-80 !items-stretch !p-4">
-                                <CardTitle icon={<Share2 size={18} />} title="Origem (Como soube)" color="purple" />
-                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={marketingData} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value">{marketingData.map((_entry, index) => <Cell key={`cell-${index}`} fill={COLORS.marketing[index % COLORS.marketing.length]} />)}</Pie><Tooltip contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Legend verticalAlign="bottom" height={36} /></PieChart></ResponsiveContainer></div>
-                            </Card>
-                            <Card className="xl:col-span-1 h-80 !items-stretch !p-8">
-                                <div className="flex items-center gap-3 mb-4"><Layers className="text-purple-500" /><h3 className={`font-bold text-lg ${theme.text}`}>Evolução Geral</h3></div>
-                                <div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={evolutionData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.chartGrid} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: '900', fill: theme.chartText }} dy={10} /><Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${theme.chartTooltipBorder}`, backgroundColor: theme.chartTooltipBg, color: theme.chartText }} /><Bar dataKey="total" barSize={50} fill={COLORS.marketing[0]} radius={[8, 8, 0, 0] as any} /><Line type="monotone" dataKey="visitantes" stroke={COLORS.visitor} strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: theme.chartText }} /></ComposedChart></ResponsiveContainer></div>
-                            </Card>
-                        </div>
-                    </div>
-                )}
+
             </div>
         </div>
     );
