@@ -118,6 +118,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                             {products.map(p => {
                                 // Lógica Simplificada de Estoque para Grade
                                 const hasStock = (size: string) => (p[`stock${size}`] || 0) > 0;
+                                console.log(hasStock)
 
                                 return (
                                     <div key={p.id} className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border-b-4 border-gray-200 dark:border-gray-700 flex flex-col items-center min-h-[140px]">
