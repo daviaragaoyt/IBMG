@@ -41,7 +41,7 @@ export const HomeEvento = ({ isLightMode }: EventoProps) => {
 
     // Countdown
     useEffect(() => {
-        const targetDate = new Date('2026-02-14T00:00:00').getTime();
+        const targetDate = new Date('2026-02-14T17:00:00').getTime();
         const updateTimer = () => {
             const now = new Date().getTime();
             const difference = targetDate - now;
