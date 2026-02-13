@@ -115,23 +115,55 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                 {mode === 'POS' && (
                     <div className="p-6 h-full pb-32 overflow-y-auto custom-scrollbar">
                         <div className="grid grid-cols-2 gap-3">
-                            {products.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => addToCart(p)}
-                                    className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border-b-4 border-gray-200 dark:border-gray-700 active:scale-95 transition-all flex flex-col items-center min-h-[120px]"
-                                >
-                                    <span className="font-bold text-xs text-center uppercase mb-2 text-gray-700 dark:text-gray-300 line-clamp-2">{p.name}</span>
-                                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs font-black text-gray-900 dark:text-white mt-auto">
-                                        R$ {Number(p.price).toFixed(2)}
-                                    </div>
-                                    {cart.find(i => i.id === p.id) && (
-                                        <div className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold shadow animate-bounce">
-                                            {cart.find(i => i.id === p.id)?.quantity}
+                            {products.map(p => {
+                                // Lógica Simplificada de Estoque para Grade
+                                const hasStock = (size: string) => (p[`stock${size}`] || 0) > 0;
+
+                                return (
+                                    <div key={p.id} className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border-b-4 border-gray-200 dark:border-gray-700 flex flex-col items-center min-h-[140px]">
+                                        <span className="font-bold text-xs text-center uppercase mb-2 text-gray-700 dark:text-gray-300 line-clamp-2">{p.name}</span>
+
+                                        {/* Preço */}
+                                        <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs font-black text-gray-900 dark:text-white mb-2">
+                                            R$ {Number(p.price).toFixed(2)}
                                         </div>
-                                    )}
-                                </button>
-                            ))}
+
+                                        {/* Seletor de Tamanho (Se for LOJA) */}
+                                        {p.category === 'LOJA' ? (
+                                            <div className="flex flex-wrap justify-center gap-1 mt-auto w-full">
+                                                {['P', 'M', 'G', 'GG'].map(size => {
+                                                    const stock = Number(p[`stock${size}`] || 0);
+                                                    const inCart = cart.find(x => x.id === p.id && x.size === size)?.quantity || 0;
+                                                    const available = stock - inCart > 0;
+
+                                                    return (
+                                                        <button
+                                                            key={size}
+                                                            disabled={!available}
+                                                            onClick={() => addToCart({ ...p, size })}
+                                                            className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all active:scale-90 flex flex-col items-center justify-center
+                                                                ${available
+                                                                    ? 'border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:text-blue-500'
+                                                                    : 'bg-gray-100 dark:bg-white/5 opacity-50 cursor-not-allowed border-transparent'}
+                                                            `}
+                                                        >
+                                                            {size}
+                                                            {inCart > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 text-white rounded-full text-[8px] flex items-center justify-center">{inCart}</span>}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => addToCart(p)}
+                                                className="mt-auto w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs active:scale-95"
+                                            >
+                                                ADICIONAR
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Barra de Checkout Flutuante */}

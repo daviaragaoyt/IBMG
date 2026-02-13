@@ -19,7 +19,16 @@ const COLORS = {
 };
 
 // --- TYPES ---
-interface CheckpointData { total: number; visitor: number; member: number; gender?: { M: number; F: number }; name?: string; }
+interface CheckpointData {
+    total: number;
+    visitor: number;
+    member: number;
+    gender?: { M: number; F: number };
+    name?: string;
+    salvation?: { total: number; M: number; F: number };
+    healing?: { total: number; M: number; F: number };
+    deliverance?: { total: number; M: number; F: number };
+}
 interface StatsState {
     totalEntrance: number; visitors: number; members: number;
     gender: { M: number; F: number }; age: { CRIANCA: number; JOVEM: number; ADULTO: number };
@@ -156,13 +165,37 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                     }
 
                     if (name !== 'Total') {
-                        if (!cpMap[name]) cpMap[name] = { total: 0, visitor: 0, member: 0, gender: { M: 0, F: 0 }, name: name };
+                        if (!cpMap[name]) cpMap[name] = {
+                            total: 0, visitor: 0, member: 0,
+                            gender: { M: 0, F: 0 },
+                            name: name,
+                            salvation: { total: 0, M: 0, F: 0 },
+                            healing: { total: 0, M: 0, F: 0 },
+                            deliverance: { total: 0, M: 0, F: 0 }
+                        };
                         cpMap[name].total += d.total || 0;
                         cpMap[name].visitor += d.type?.VISITOR || 0;
                         cpMap[name].member += d.type?.MEMBER || 0;
                         if (d.gender && cpMap[name].gender) {
                             cpMap[name].gender.M += d.gender.M || 0;
                             cpMap[name].gender.F += d.gender.F || 0;
+                        }
+
+                        // Agregar dados espirituais por departamento
+                        if (d.salvation && cpMap[name].salvation) {
+                            cpMap[name].salvation!.total += d.salvation.total || 0;
+                            cpMap[name].salvation!.M += d.salvation.M || 0;
+                            cpMap[name].salvation!.F += d.salvation.F || 0;
+                        }
+                        if (d.healing && cpMap[name].healing) {
+                            cpMap[name].healing!.total += d.healing.total || 0;
+                            cpMap[name].healing!.M += d.healing.M || 0;
+                            cpMap[name].healing!.F += d.healing.F || 0;
+                        }
+                        if (d.deliverance && cpMap[name].deliverance) {
+                            cpMap[name].deliverance!.total += d.deliverance.total || 0;
+                            cpMap[name].deliverance!.M += d.deliverance.M || 0;
+                            cpMap[name].deliverance!.F += d.deliverance.F || 0;
                         }
                     }
                 } else { aggregate(d); }
@@ -200,21 +233,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
         return s;
     }, [localData, selectedDay]);
 
-    // CALCULO DO TOTAL GERAL (Soma de todos os 'Total' de todos os dias disponíveis)
-    const grandTotal = useMemo(() => {
-        if (!localData?.checkpointsData) return 0;
-        let total = 0;
-        Object.values(localData.checkpointsData).forEach((dayData: any) => {
-            if (dayData['Total']) total += dayData['Total'].total || 0;
-            else {
-                // Fallback se não tiver 'Total' explícito
-                Object.values(dayData).forEach((val: any) => {
-                    if (val.total && val.name !== 'Total') total += val.total;
-                });
-            }
-        });
-        return total;
-    }, [localData]);
+
 
     const genderData = [{ name: 'Homens', value: stats.gender.M }, { name: 'Mulheres', value: stats.gender.F }];
     const ageData = [{ name: 'Crianças', value: stats.age.CRIANCA, fill: COLORS.kids }, { name: 'Jovens', value: stats.age.JOVEM, fill: '#F59E0B' }, { name: 'Adultos', value: stats.age.ADULTO, fill: COLORS.adult }];
@@ -237,7 +256,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                             <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight truncate">
                                 Dashboard <span className="text-[#A855F7]">Eventos</span>
                             </h1>
-                            <span className={`text-sm md:text-base font-bold ${theme.mutedText}`}>Total Geral da Conferência: <span className="text-purple-500">{grandTotal} Pessoas</span></span>
+                            <span className={`text-sm md:text-base font-bold ${theme.mutedText}`}>Total Geral da Conferência: <span className="text-purple-500">{localData?.totalEventEntrance || 0} Pessoas</span></span>
                         </div>
 
                     </div>
@@ -383,15 +402,15 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10 w-full px-2">
                                                 <div className="grid grid-cols-3 gap-1 text-center">
                                                     <div className="flex flex-col">
-                                                        <span className="text-emerald-500 font-black text-lg">{stats.salvation.total}</span>
+                                                        <span className="text-emerald-500 font-black text-lg">{dept.salvation?.total || 0}</span>
                                                         <span className="text-[8px] uppercase font-bold opacity-60">Salvação</span>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-red-500 font-black text-lg">{stats.healing.total}</span>
+                                                        <span className="text-red-500 font-black text-lg">{dept.healing?.total || 0}</span>
                                                         <span className="text-[8px] uppercase font-bold opacity-60">Cura</span>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-orange-500 font-black text-lg">{stats.deliverance.total}</span>
+                                                        <span className="text-orange-500 font-black text-lg">{dept.deliverance?.total || 0}</span>
                                                         <span className="text-[8px] uppercase font-bold opacity-60">Libertação</span>
                                                     </div>
                                                 </div>

@@ -43,7 +43,41 @@ export const ProductModal = ({ product, isOpen, onClose, onAddToCart, isLightMod
                         <h2 className="text-2xl font-black uppercase mb-1 leading-none tracking-tight">{product.name}</h2>
                         <div className="flex items-center gap-2 mb-4"><p className="text-3xl font-black text-purple-600 dark:text-purple-400">{formatCurrency(Number(product.price))}</p>{product.category === 'LOJA' && <span className="text-[10px] font-bold bg-purple-500/10 text-purple-500 px-2 py-0.5 rounded border border-purple-500/20 uppercase">Oficial</span>}</div>
                         <p className="text-sm opacity-70 mb-6 font-medium leading-relaxed">{product.description || "Produto oficial. Garanta o seu."}</p>
-                        {product.category === 'LOJA' && !isMenuOnly && (<div className="mb-8"><span className="text-xs font-bold uppercase opacity-50 block mb-3">Tamanho</span><div className="flex flex-wrap gap-3">{MOCK_SIZES.map(size => (<button key={size} onClick={() => setSelectedSize(size)} className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold border-2 transition-all active:scale-95 ${selectedSize === size ? 'bg-purple-600 border-purple-600 text-white' : `${isLightMode ? 'border-gray-200 text-gray-600 hover:border-purple-300' : 'border-white/10 text-white/70 hover:border-white/30'}`}`}>{size}</button>))}</div></div>)}
+                        {product.category === 'LOJA' && !isMenuOnly && (
+                            <div className="mb-8">
+                                <span className="text-xs font-bold uppercase opacity-50 block mb-3">Tamanho</span>
+                                <div className="flex flex-wrap gap-3">
+                                    {MOCK_SIZES.map(size => {
+                                        // Pega o estoque dinamicamente: stockP, stockM...
+                                        // Se não vier do backend (ex: cache antigo), assume 0 para travar ou 1 para liberar (melhor 0)
+                                        const stockKey = `stock${size}` as keyof typeof product;
+                                        const currentStock = Number(product[stockKey] || 0);
+                                        const outOfStock = currentStock <= 0;
+
+                                        return (
+                                            <button
+                                                key={size}
+                                                onClick={() => !outOfStock && setSelectedSize(size)}
+                                                disabled={outOfStock}
+                                                className={`w-12 h-14 rounded-xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 relative
+                                                    ${selectedSize === size
+                                                        ? 'bg-purple-600 border-purple-600 text-white'
+                                                        : outOfStock
+                                                            ? 'border-gray-200 dark:border-white/5 opacity-50 cursor-not-allowed bg-gray-100 dark:bg-white/5'
+                                                            : `${isLightMode ? 'border-gray-200 text-gray-600 hover:border-purple-300' : 'border-white/10 text-white/70 hover:border-white/30'}`
+                                                    }
+                                                `}
+                                            >
+                                                <span className="text-sm font-bold">{size}</span>
+                                                <span className={`text-[9px] font-black uppercase ${selectedSize === size ? 'text-white/80' : 'opacity-40'}`}>
+                                                    {outOfStock ? 'ESGOT' : currentStock}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     {!isMenuOnly ? (
                         <div className={`mt-6 pt-6 border-t ${isLightMode ? 'border-gray-200' : 'border-white/10'} space-y-4`}><div className={`flex items-center justify-between p-2 rounded-xl ${btnSecondary}`}><button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-black/10 active:scale-90 transition-transform"><Minus size={20} /></button><span className="text-2xl font-black font-mono">{quantity}</span><button onClick={() => setQuantity(q => q + 1)} className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-black/10 active:scale-90 transition-transform"><Plus size={20} /></button></div><button onClick={handleAdd} disabled={product.category === 'LOJA' && !selectedSize} className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-50 transition-all active:scale-95">ADICIONAR</button></div>

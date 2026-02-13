@@ -86,6 +86,7 @@ export const StoreOrders = () => {
                             <span className="flex items-center gap-2">
                                 <span className="font-bold text-white">{item.quantity}x</span>
                                 {item.product?.name || item.name}
+                                {item.size && <span className="bg-white/20 px-1.5 rounded textxs font-bold">{item.size}</span>}
                             </span>
                         </div>
                     ))}

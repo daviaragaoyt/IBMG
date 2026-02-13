@@ -88,7 +88,7 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
             const payload = {
                 ...formData,
                 total: cart.reduce((a: any, b: any) => a + b.price * b.quantity, 0),
-                items: JSON.stringify(cart.map((i: any) => ({ productId: i.id, quantity: i.quantity, price: i.price })))
+                items: JSON.stringify(cart.map((i: any) => ({ productId: i.id, quantity: i.quantity, price: i.price, size: i.size })))
             };
 
             const response = await api.createOrder(payload);

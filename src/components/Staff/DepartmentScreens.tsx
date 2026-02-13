@@ -35,7 +35,7 @@ export const MartyrsScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot
 
     return (
         <ScreenLayout user={user} title="Casa dos Mártires" icon={<Flame />} accentColor="#DC2626" onLogout={onLogout} checkpoints={checkpoints} selectedSpot={selectedSpot} setSelectedSpot={setSelectedSpot} theme={theme}>
-            <MeetingCounter theme={theme} />
+
             <div className="p-6 pt-2 flex flex-col h-full gap-4">
 
 
@@ -48,8 +48,7 @@ export const MartyrsScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot
                 <div className="grid grid-cols-2 gap-4 flex-1">
                     <button onClick={() => handleCount({ gender: 'M', ageGroup: 'ADULTO', type: personType }, '+1 Homem')} className="bg-blue-600 rounded-[2rem] text-white shadow-xl active:scale-95 transition-all flex flex-col items-center justify-center border-b-8 border-blue-800 hover:brightness-110"><span className="text-5xl mb-2 filter drop-shadow-md">👨</span><span className="font-black text-sm tracking-widest">HOMEM</span></button>
                     <button onClick={() => handleCount({ gender: 'F', ageGroup: 'ADULTO', type: personType }, '+1 Mulher')} className="bg-pink-600 rounded-[2rem] text-white shadow-xl active:scale-95 transition-all flex flex-col items-center justify-center border-b-8 border-pink-800 hover:brightness-110"><span className="text-5xl mb-2 filter drop-shadow-md">👩</span><span className="font-black text-sm tracking-widest">MULHER</span></button>
-                    <button onClick={() => handleCount({ gender: 'M', ageGroup: 'JOVEM', type: personType }, '+1 Jovem')} className="bg-yellow-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-yellow-800 hover:brightness-110"><span className="text-3xl mb-1">🧑‍🎤</span><span className="font-black text-xs">JOVEM</span></button>
-                    <button onClick={() => handleCount({ gender: 'M', ageGroup: 'CRIANCA', type: personType }, '+1 Criança')} className="bg-green-600 h-24 rounded-2xl text-white shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center border-b-4 border-green-800 hover:brightness-110"><span className="text-3xl mb-1">👶</span><span className="font-black text-xs">CRIANÇA</span></button>
+
                 </div>
             </div>
         </ScreenLayout>
