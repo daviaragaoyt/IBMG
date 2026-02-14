@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { ScreenLayout, formatCurrency } from './StaffShared';
+import { ScreenLayout, formatCurrency, formatPhone } from './StaffShared';
 import { StoreOrders } from '../StoreOrders';
 import { ShoppingBag, LayoutDashboard, DollarSign, XCircle, RefreshCw } from 'lucide-react';
 
@@ -19,6 +19,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
     const Icon = ShoppingBag;
     const [buyerEmail, setBuyerEmail] = useState('');
     const [buyerCPF, setBuyerCPF] = useState('');
+    const [buyerPhone, setBuyerPhone] = useState('');
     const [generateLink, setGenerateLink] = useState(false); // Toggle para decidir se quer link ou apenas registro
 
     // Carregar produtos baseados na categoria do departamento
@@ -54,6 +55,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                 name: buyerName || 'Balcão',
                 email: generateLink ? buyerEmail : undefined, // Se não tiver email, o backend trata como balcão
                 cpf: generateLink ? buyerCPF : undefined,
+                phone: buyerPhone, // Adicionado telefone
                 manualType: 'VISITOR'
             };
 
@@ -70,7 +72,9 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
             setCart([]);
             setBuyerName('');
             setBuyerEmail('');
+            setBuyerEmail('');
             setBuyerCPF('');
+            setBuyerPhone('');
             setPaymentMethod('');
             setIsCheckout(false);
             setGenerateLink(false);
@@ -207,6 +211,15 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                                         className="w-full p-4 mb-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-bold outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                                         value={buyerName}
                                         onChange={e => setBuyerName(e.target.value)}
+                                    />
+
+                                    <input
+                                        type="tel"
+                                        placeholder="Telefone (WhatsApp) - Opcional"
+                                        className="w-full p-4 mb-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-bold outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                                        value={buyerPhone}
+                                        onChange={e => setBuyerPhone(formatPhone(e.target.value))}
+                                        maxLength={15}
                                     />
 
                                     <div className="grid grid-cols-3 gap-3 mb-6">

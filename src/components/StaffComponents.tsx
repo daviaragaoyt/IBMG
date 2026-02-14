@@ -37,7 +37,8 @@ export const Toast = ({ msg, type }: any) => (
 
 // --- DEFAULT SCREEN LAYOUT ---
 const ScreenLayout = ({ user, title, icon, accentColor, onLogout, checkpoints, selectedSpot, theme, children }: any) => {
-    const currentSpotName = checkpoints.find((c: any) => c.id === selectedSpot)?.name || "Local Indefinido";
+    const rawSpotName = checkpoints.find((c: any) => c.id === selectedSpot)?.name || "Local Indefinido";
+    const currentSpotName = rawSpotName.replace(/Sala Profética|Sala Profetica/gi, "Tenda Profética");
 
     return (
         <div className="flex flex-col h-full min-h-screen transition-colors duration-500" style={{ background: theme.bgApp, color: theme.textPrimary }}>
@@ -134,6 +135,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
     const [isCheckout, setIsCheckout] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('');
     const [buyerName, setBuyerName] = useState('');
+    const [buyerPhone, setBuyerPhone] = useState('');
     const [proofFile, setProofFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -160,6 +162,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
         try {
             const formData = new FormData();
             formData.append('buyerName', buyerName || 'Balcão');
+            formData.append('phone', buyerPhone); // ENVIA O TELEFONE (Backend espera 'phone' no body ou 'buyerPhone' mas o controller usa 'phone' do request body)
             formData.append('buyerType', 'VISITOR');
             formData.append('total', String(cart.reduce((a, b) => a + b.price * b.quantity, 0)));
             formData.append('paymentMethod', paymentMethod);
@@ -168,7 +171,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
 
             await api.createOrder(formData);
             addToast(`Venda Registrada!`, 'success');
-            setCart([]); setIsCheckout(false); setPaymentMethod(''); setProofFile(null); setBuyerName('');
+            setCart([]); setIsCheckout(false); setPaymentMethod(''); setProofFile(null); setBuyerName(''); setBuyerPhone('');
         } catch (e) {
             addToast("Erro ao processar", 'error');
         } finally {
@@ -247,6 +250,15 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                                         onChange={e => setBuyerName(e.target.value)}
                                     />
 
+                                    <input
+                                        type="tel"
+                                        placeholder="Telefone (WhatsApp) - Opcional"
+                                        className="w-full p-4 mb-4 rounded-xl bg-gray-50 border border-gray-200 font-bold outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder-gray-500"
+                                        value={buyerPhone}
+                                        onChange={e => setBuyerPhone(formatPhone(e.target.value))}
+                                        maxLength={15}
+                                    />
+
                                     <p className="text-xs font-bold text-gray-500 mb-2 uppercase">Forma de Pagamento</p>
                                     <div className="grid grid-cols-3 gap-3 mb-6">
                                         {['DINHEIRO', 'PIX', 'CARTAO'].map(m => (
@@ -296,7 +308,7 @@ export const EvangelismScreen = ({ user, checkpoints, selectedSpot, setSelectedS
                     <div className="grid grid-cols-3 gap-3">
                         <button onClick={() => handleCount({ marketingSource: 'VIDA_SALVA' }, 'Salvação!')} className="bg-emerald-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-emerald-800"><Cross size={18} /><span className="text-[9px] font-black uppercase mt-1">Salvação</span></button>
                         <button onClick={() => handleCount({ marketingSource: 'CURA' }, 'Cura!')} className="bg-red-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-red-800"><Heart size={18} /><span className="text-[9px] font-black uppercase mt-1">Cura</span></button>
-                        <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Libertação!')} className="bg-orange-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-orange-800"><Flame size={18} /><span className="text-[9px] font-black uppercase mt-1">Libertação</span></button>
+                        <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Oração!')} className="bg-orange-600 py-3 rounded-xl text-white shadow active:scale-95 flex flex-col items-center border-b-4 border-orange-800"><Flame size={18} /><span className="text-[9px] font-black uppercase mt-1">Oração</span></button>
                     </div>
                 </div>
             </div>
@@ -337,7 +349,7 @@ export const PrayerScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot,
                     <div className="grid grid-cols-3 gap-4">
                         <button onClick={() => handleCount({ marketingSource: 'VIDA_SALVA' }, 'Salvação!')} className="bg-emerald-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-emerald-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Cross size={32} /><span className="text-xs font-black uppercase mt-2">Salvação</span></button>
                         <button onClick={() => handleCount({ marketingSource: 'CURA' }, 'Cura!')} className="bg-red-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-red-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Heart size={32} /><span className="text-xs font-black uppercase mt-2">Cura</span></button>
-                        <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Libertação!')} className="bg-orange-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-orange-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Flame size={32} /><span className="text-xs font-black uppercase mt-2">Libertação</span></button>
+                        <button onClick={() => handleCount({ marketingSource: 'LIBERTACAO' }, 'Oração!')} className="bg-orange-600 aspect-square rounded-2xl text-white shadow-lg border-b-4 border-orange-800 active:scale-95 transition-all flex flex-col items-center justify-center"><Flame size={32} /><span className="text-xs font-black uppercase mt-2">Oração</span></button>
                     </div>
                 </div>
                 <div className="h-px bg-white/10"></div>

@@ -365,7 +365,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
 
                                 return (
                                     <Card key={dept.name} className={`h-64 border-l-4 ${borderColor}`}>
-                                        <CardTitle icon={<Icon size={20} />} title={dept.name || 'Local Indefinido'} color={color.replace('text-', '').replace('-500', '').replace('-600', '')} />
+                                        <CardTitle icon={<Icon size={20} />} title={dept.name?.replace(/sala profética|sala profetica/gi, 'Tenda Profética') || 'Local Indefinido'} color={color.replace('text-', '').replace('-500', '').replace('-600', '')} />
                                         <div className="flex items-end gap-2">
                                             <span className={`text-6xl font-black ${color}`}>{dept.total}</span>
                                             {nameLower.includes('loja') ? <span className="text-xs font-bold text-gray-500 mb-2">Vendas/Items</span> : <span className="text-xs font-bold text-gray-500 mb-2">Pessoas</span>}
@@ -411,7 +411,7 @@ export const DashboardEvento = ({ isLightMode, data }: { isLightMode: boolean, d
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="text-orange-500 font-black text-lg">{dept.deliverance?.total || 0}</span>
-                                                        <span className="text-[8px] uppercase font-bold opacity-60">Libertação</span>
+                                                        <span className="text-[8px] uppercase font-bold opacity-60">Oração / Libertação</span>
                                                     </div>
                                                 </div>
                                             </div>

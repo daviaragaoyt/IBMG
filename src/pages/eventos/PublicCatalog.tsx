@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, ArrowLeft, Search, Filter, ShoppingCart, X, CheckCircle2, Sparkles } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, Search, Filter, ShoppingCart, X, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { Toast } from '../../components/StaffComponents';
@@ -58,7 +58,7 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
 
                 if (check.status === 'PAID') {
                     setPixData(null);
-                    setIsFlowOpen(false);
+                    // setIsFlowOpen(false); // 👈 NÃO FECHAR
                     setCart([]);
                     setSuccessOrder({ orderCode: check.orderCode });
                     clearInterval(interval);
@@ -157,36 +157,9 @@ export const PublicCatalog = ({ type, isLightMode }: any) => {
             <div className="fixed top-6 right-6 flex flex-col items-end pointer-events-none z-[100] gap-2">{toasts.map(t => <Toast key={t.id} msg={t.msg} type="success" />)}</div>
             <ProductModal product={viewProduct} isOpen={!!viewProduct} onClose={() => setViewProduct(null)} onAddToCart={addToCart} isLightMode={isLightMode} isMenuOnly={isMenuOnly} />
 
-            {!isMenuOnly && (<FlowModal isOpen={isFlowOpen} onClose={() => setIsFlowOpen(false)} cart={cart} setCart={setCart} total={cart.reduce((a, b) => a + b.price * b.quantity, 0)} onConfirm={handleFinalizeOrder} loading={checkoutLoading} isStaff={isStaff} />)}
+            {!isMenuOnly && (<FlowModal isOpen={isFlowOpen} onClose={() => { setIsFlowOpen(false); setSuccessOrder(null); }} cart={cart} setCart={setCart} total={cart.reduce((a, b) => a + b.price * b.quantity, 0)} onConfirm={handleFinalizeOrder} loading={checkoutLoading} isStaff={isStaff} successOrder={successOrder} />)}
 
-            {/* Tela de Sucesso */}
-            {successOrder && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 animate-fade-in">
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
-                    <div className="relative w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-2xl text-center animate-scale-up border border-white/10">
 
-                        <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-[0_0_40px_-10px_#22c55e] animate-bounce">
-                            <CheckCircle2 size={48} strokeWidth={3} />
-                        </div>
-
-                        <h2 className="text-3xl font-black uppercase mb-2 text-gray-900 tracking-tighter">Pedido Pago!</h2>
-                        <p className="text-gray-500 mb-8 font-medium">Seu pedido foi confirmado. Mostre o código abaixo no Hall da igreja.</p>
-
-                        <div className="bg-gray-50 p-6 rounded-3xl mb-8 border border-gray-100">
-                            <p className="text-3xl font-black tracking-widest text-purple-600 font-mono">TIRE PRINT</p>
-                            <p className="text-xs font-bold uppercase opacity-40 mb-2 tracking-widest text-gray-900">Código de Retirada</p>
-                            <p className="text-6xl font-black tracking-widest text-purple-600 font-mono">#{successOrder?.orderCode}</p>
-                        </div>
-
-                        <Link
-                            to="/"
-                            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase active:scale-95 transition-transform shadow-xl flex items-center justify-center gap-2"
-                        >
-                            Voltar para o Evento
-                        </Link>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

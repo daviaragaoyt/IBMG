@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, X, User, QrCode, Trash2, Loader2, Mail, CreditCard } from 'lucide-react';
+import { ShoppingBag, X, User, QrCode, Trash2, Loader2, Mail, CreditCard, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../components/StaffComponents';
 import { maskPhone } from './config';
 
@@ -13,8 +13,8 @@ const maskCPF = (value: string) => {
 };
 
 export const FlowModal = (props: any) => {
-    const { isOpen, onClose, cart, setCart, total, onConfirm, loading, isStaff } = props;
-    const [step, setStep] = useState<'CART' | 'REGISTER' | 'PIX_WAIT'>('CART');
+    const { isOpen, onClose, cart, setCart, total, onConfirm, loading, isStaff, successOrder } = props;
+    const [step, setStep] = useState<'CART' | 'REGISTER' | 'PIX_WAIT' | 'SUCCESS'>('CART');
 
     // 👇 1. Added manualType state (defaults to VISITOR)
     const [manualType, setManualType] = useState<'VISITOR' | 'MEMBER'>('VISITOR');
@@ -33,6 +33,13 @@ export const FlowModal = (props: any) => {
             if (cart.length === 0) onClose();
         }
     }, [isOpen]);
+
+    // Watch for successOrder
+    useEffect(() => {
+        if (successOrder) {
+            setStep('SUCCESS');
+        }
+    }, [successOrder]);
 
     if (!isOpen) return null;
 
@@ -72,9 +79,9 @@ export const FlowModal = (props: any) => {
                 {/* Header */}
                 <div className="p-5 flex justify-between items-center shrink-0 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-2 text-purple-600">
-                        {step === 'PIX_WAIT' ? <QrCode /> : step === 'REGISTER' ? <User /> : <ShoppingBag />}
+                        {step === 'SUCCESS' ? <CheckCircle2 /> : step === 'PIX_WAIT' ? <QrCode /> : step === 'REGISTER' ? <User /> : <ShoppingBag />}
                         <h2 className="text-lg font-black text-gray-800 uppercase tracking-tight">
-                            {step === 'PIX_WAIT' ? 'Pague com PIX' : step === 'CART' ? 'Carrinho' : 'Seus Dados'}
+                            {step === 'SUCCESS' ? 'Compra Realizada' : step === 'PIX_WAIT' ? 'Pague com PIX' : step === 'CART' ? 'Carrinho' : 'Seus Dados'}
                         </h2>
                     </div>
                     <button onClick={onClose} className="p-2 bg-gray-100 rounded-full"><X size={20} /></button>
@@ -175,6 +182,37 @@ export const FlowModal = (props: any) => {
 
                             <button onClick={copyToClipboard} className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl active:scale-95 transition-transform hover:bg-gray-200">
                                 {copySuccess ? 'Copiado! ✅' : 'Copiar código PIX 📋'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* STEP 4: SUCCESS */}
+                    {step === 'SUCCESS' && successOrder && (
+                        <div className="text-center space-y-6 animate-fade-in flex flex-col items-center justify-center h-full">
+
+                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center text-white mx-auto shadow-lg shadow-green-500/30 animate-bounce">
+                                <CheckCircle2 size={40} strokeWidth={3} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-black uppercase text-gray-900 tracking-tighter">Pedido Pago!</h2>
+                                <p className="text-gray-500 font-medium text-sm">Seu pedido foi confirmado.<br />Mostre o código abaixo no Hall.</p>
+                            </div>
+
+                            <div className="bg-gray-50 p-6 rounded-3xl w-full border border-gray-100 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-2 opacity-10">
+                                    <QrCode size={100} />
+                                </div>
+                                <p className="text-2xl font-black tracking-widest text-purple-600 font-mono mb-1">TIRE PRINT</p>
+                                <p className="text-[10px] font-bold uppercase opacity-40 mb-2 tracking-widest text-gray-900">Código de Retirada</p>
+                                <p className="text-5xl font-black tracking-widest text-purple-600 font-mono">#{successOrder.orderCode}</p>
+                            </div>
+
+                            <button
+                                onClick={onClose}
+                                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase active:scale-95 transition-transform shadow-xl flex items-center justify-center gap-2"
+                            >
+                                Fechar e Voltar
                             </button>
                         </div>
                     )}
