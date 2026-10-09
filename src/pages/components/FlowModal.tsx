@@ -172,9 +172,7 @@ export const FlowModal = (props: any) => {
 
                             <div className="p-4 bg-white border-2 border-dashed border-gray-300 rounded-xl inline-block">
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                                        pixData.copyPaste
-                                    )}`}
+                                    src={pixData.url || `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(pixData.copyPaste)}`}
                                     className="mx-auto mix-blend-multiply"
                                     alt="QR Code PIX"
                                 />

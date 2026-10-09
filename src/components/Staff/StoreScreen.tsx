@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { ScreenLayout, formatCurrency, formatPhone } from './StaffShared';
 import { StoreOrders } from '../StoreOrders';
-import { ShoppingBag, LayoutDashboard, DollarSign, XCircle, RefreshCw } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, DollarSign, XCircle, RefreshCw, Link as LinkIcon } from 'lucide-react';
 
 export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, addToast, onLogout, theme }: any) => {
     const [mode, setMode] = useState<'POS' | 'ORDERS'>('POS');
@@ -61,7 +61,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
 
             const response = await api.createOrder(saleData);
 
-            // Se o backend gerou um link de pagamento (AbacatePay)
+            // Se o backend gerou um link de pagamento (Mercado Pago)
             if (response.pixData?.url) {
                 window.open(response.pixData.url, '_blank');
             }
@@ -71,7 +71,6 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
             // Limpeza
             setCart([]);
             setBuyerName('');
-            setBuyerEmail('');
             setBuyerEmail('');
             setBuyerCPF('');
             setBuyerPhone('');
@@ -195,15 +194,44 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                         {/* Modal de Finalização de Pagamento */}
                         {isCheckout && (
                             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
-                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 shadow-2xl animate-slide-up border border-white/10">
+                                <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 shadow-2xl animate-slide-up border border-white/10 overflow-y-auto max-h-[90vh] custom-scrollbar">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                                            <DollarSign className="text-green-500" /> Pagamento Balcão
+                                            <DollarSign className="text-green-500" /> Pagamento
                                         </h3>
                                         <button onClick={() => setIsCheckout(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 hover:text-red-500 transition-colors">
                                             <XCircle size={20} />
                                         </button>
                                     </div>
+
+                                    {/* Botão de Toggle para Gerar Link */}
+                                    <button
+                                        onClick={() => setGenerateLink(!generateLink)}
+                                        className={`w-full mb-6 p-3 rounded-xl border-2 text-xs font-bold flex items-center justify-center gap-2 transition-all ${generateLink ? 'border-blue-500 bg-blue-500/10 text-blue-500' : 'border-gray-200 dark:border-gray-700 text-gray-400'}`}
+                                    >
+                                        <LinkIcon size={16} />
+                                        {generateLink ? 'GERAR LINK DE PAGAMENTO (ONLINE)' : 'REGISTRAR VENDA LOCAL (BALCÃO)'}
+                                    </button>
+
+                                    {generateLink && (
+                                        <div className="bg-blue-500/10 p-4 rounded-xl mb-4 border border-blue-500/20">
+                                            <p className="text-[10px] text-blue-500 mb-2 font-bold uppercase">Dados do Cliente (Obrigatório para Link)</p>
+                                            <input
+                                                type="email"
+                                                placeholder="E-mail do Cliente"
+                                                className="w-full p-3 mb-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-bold outline-none text-xs text-gray-900 dark:text-white"
+                                                value={buyerEmail}
+                                                onChange={e => setBuyerEmail(e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="CPF do Cliente"
+                                                className="w-full p-3 mb-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-bold outline-none text-xs text-gray-900 dark:text-white"
+                                                value={buyerCPF}
+                                                onChange={e => setBuyerCPF(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
 
                                     <input
                                         type="text"
@@ -239,7 +267,7 @@ export const StoreScreen = ({ user, checkpoints, selectedSpot, setSelectedSpot, 
                                         disabled={!paymentMethod || loading}
                                         className="w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-lg flex items-center justify-center"
                                     >
-                                        {loading ? <RefreshCw className="animate-spin" size={24} /> : 'CONFIRMAR VENDA'}
+                                        {loading ? <RefreshCw className="animate-spin" size={24} /> : (generateLink ? 'GERAR LINK' : 'CONFIRMAR VENDA')}
                                     </button>
                                 </div>
                             </div>

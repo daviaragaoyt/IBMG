@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 // --- COMPONENTES GERAIS ---
 import { Navbar } from './components/Navbar';
-import { PrivateRoute } from './components/PrivateRoute';
+// [EKKLESIA DESATIVADO] PrivateRoute só era usado na rota /ekklesia/dashboard
+// import { PrivateRoute } from './components/PrivateRoute';
 
 // --- PÁGINAS DAS FERRAMENTAS (Sorteios/Bingo) ---
 import { Home } from './pages/Home';
@@ -11,13 +12,20 @@ import { SorteioNomes } from './pages/ferramentas/SorteioNomes';
 import { SorteioNumeros } from './pages/ferramentas/SorteioNumeros';
 import { Bingo } from './pages/ferramentas/Bingo';
 
-// --- PÁGINAS DO EVENTO EKKLESIA ---
-import { HomeEvento } from './pages/eventos/HomeEvento';
-import { EkklesiaStaff } from './pages/eventos/EkklesiaStaff';
-import { EkklesiaCredential } from './pages/eventos/EkklesiaCredential';
-import { EkklesiaDashboard } from './pages/eventos/EkklesiaDashboard';
-import { PublicCatalog } from './pages/eventos/PublicCatalog';
-import { MeetingManager } from './pages/eventos/MeetingManager';
+// --- PÁGINAS DO EVENTO EKKLESIA --- [EKKLESIA DESATIVADO]
+// import { HomeEvento } from './pages/eventos/HomeEvento';
+// import { EkklesiaStaff } from './pages/eventos/EkklesiaStaff';
+// import { EkklesiaCredential } from './pages/eventos/EkklesiaCredential';
+// import { EkklesiaDashboard } from './pages/eventos/EkklesiaDashboard';
+// import { PublicCatalog } from './pages/eventos/PublicCatalog';
+// import { MeetingManager } from './pages/eventos/MeetingManager';
+
+// --- PÁGINAS DO EVENTO HCAMP ---
+import { HcampHome } from './pages/eventos/hcamp/HcampHome';
+import { HcampSorteio } from './pages/eventos/hcamp/HcampSorteio';
+import { HcampTicket } from './pages/eventos/hcamp/HcampTicket';
+import { HcampQrCode } from './pages/eventos/hcamp/HcampQrCode';
+import { HcampStaff } from './pages/eventos/hcamp/HcampStaff';
 
 const MainContent = () => {
   const location = useLocation();
@@ -42,11 +50,14 @@ const MainContent = () => {
   const toggleTheme = () => setIsLightMode(!isLightMode);
 
   // Lógica de Fundo Dinâmico
-  const isEkklesiaRoute = location.pathname.includes('/ekklesia');
+  // [EKKLESIA DESATIVADO]
+  // const isEkklesiaRoute = location.pathname.includes('/ekklesia');
+  const isHcampRoute = location.pathname.includes('/hcamp');
 
   const getBackgroundClass = () => {
     if (isLightMode) return 'bg-gray-100 text-gray-900';
-    if (isEkklesiaRoute) return 'bg-[#0F0014] text-white'; // Roxo Ekklesia
+    // if (isEkklesiaRoute) return 'bg-[#0F0014] text-white'; // Roxo Ekklesia [EKKLESIA DESATIVADO]
+    if (isHcampRoute) return 'bg-[#1C2B1B] text-white'; // Verde HCAMP
     return 'bg-[#001233] text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#001E3C] to-[#000911]'; // Azul Ferramentas
   };
 
@@ -87,23 +98,33 @@ const MainContent = () => {
             </div>
           } />
 
-          {/* === 2. EVENTO EKKLESIA (Tela Cheia / Full Width) === */}
-          {/* Aqui NÃO tem container restringindo largura */}
+          {/* === 2. EVENTO EKKLESIA — [EKKLESIA DESATIVADO] ===
+              Para reativar: remova este bloco de comentário e descomente os imports no topo.
+              // === 2. EVENTO EKKLESIA (Tela Cheia / Full Width) ===
+              // Aqui NÃO tem container restringindo largura
 
-          <Route path="/ekklesia" element={<HomeEvento isLightMode={isLightMode} />} />
-          <Route path="/ekklesia/credencial" element={<EkklesiaCredential isLightMode={isLightMode} />} />
-          <Route path="/ekklesia/loja" element={<PublicCatalog type="STORE" isLightMode={isLightMode} />} />
-          <Route path="/ekklesia/gourmet" element={<PublicCatalog type="CANTINA" isLightMode={isLightMode} />} />
-          <Route path="/ekklesia/reunioes" element={<MeetingManager isLightMode={isLightMode} />} />
+              <Route path="/ekklesia" element={<HomeEvento isLightMode={isLightMode} />} />
+              <Route path="/ekklesia/credencial" element={<EkklesiaCredential isLightMode={isLightMode} />} />
+              <Route path="/ekklesia/loja" element={<PublicCatalog type="STORE" isLightMode={isLightMode} />} />
+              <Route path="/ekklesia/gourmet" element={<PublicCatalog type="CANTINA" isLightMode={isLightMode} />} />
+              <Route path="/ekklesia/reunioes" element={<MeetingManager isLightMode={isLightMode} />} />
 
-          <Route path="/ekklesia/dashboard" element={
-            <PrivateRoute>
-              <EkklesiaDashboard isLightMode={isLightMode} />
-            </PrivateRoute>
-          }
-          />
+              <Route path="/ekklesia/dashboard" element={
+                <PrivateRoute>
+                  <EkklesiaDashboard isLightMode={isLightMode} />
+                </PrivateRoute>
+              }
+              />
 
-          <Route path="/ekklesia/admin" element={<EkklesiaStaff isLightMode={isLightMode} />} />
+              <Route path="/ekklesia/admin" element={<EkklesiaStaff isLightMode={isLightMode} />} />
+          */}
+
+          {/* === 3. EVENTO HCAMP (Tela Cheia / Full Width) === */}
+          <Route path="/hcamp" element={<HcampHome isLightMode={isLightMode} />} />
+          <Route path="/hcamp/sorteio" element={<HcampSorteio isLightMode={isLightMode} />} />
+          <Route path="/hcamp/ticket" element={<HcampTicket isLightMode={isLightMode} />} />
+          <Route path="/hcamp/qrcode" element={<HcampQrCode isLightMode={isLightMode} />} />
+          <Route path="/hcamp/staff" element={<HcampStaff isLightMode={isLightMode} />} />
 
         </Routes>
       </main>
