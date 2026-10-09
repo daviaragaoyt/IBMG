@@ -2,8 +2,8 @@
 // HCAMP — Serviço do sorteio de times da gincana
 // ---------------------------------------------------------------------
 // Fala com o backend (módulo src/modules/Hcamp no ibmg-backend):
-//   POST   {API}/hcamp/draw              { name, deviceId } -> HcampTicket
-//   GET    {API}/hcamp/me?deviceId=...   -> HcampTicket | 404
+//   POST   {API}/hcamp/draw              { name } -> HcampTicket (1 por nome completo; 409 se já existe)
+//   GET    {API}/hcamp/tickets?codes=A,B -> HcampTicket[]  ("Meus tickets" deste celular)
 //   GET    {API}/hcamp/stats             -> HcampStats   (staff)
 //   DELETE {API}/hcamp/stats             -> 204          (staff, zera tudo)
 //   GET    {API}/hcamp/config            -> { revealAt, revealed, serverNow }
@@ -55,8 +55,8 @@ export class HcampAuthError extends Error { }
 const USE_MOCK = import.meta.env.VITE_HCAMP_MOCK === 'true';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-const TICKET_KEY = 'hcamp_ticket';        // ticket deste celular
-const DEVICE_KEY = 'hcamp_device_id';     // identificador deste celular
+const TICKETS_KEY = 'hcamp_tickets';      // tickets sorteados NESTE celular (pode ser de várias pessoas)
+const OLD_TICKET_KEY = 'hcamp_ticket';    // versão antiga (1 ticket por celular) — migrado
 const STAFF_KEY = 'hcamp_staff_user';     // sessão do staff
 const MOCK_DB_KEY = 'hcamp_mock_db';      // "banco" do modo de teste
 const MOCK_REVEAL_KEY = 'hcamp_mock_reveal_at';
@@ -67,16 +67,28 @@ const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { r
 const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
 const lsDel = (k: string) => { try { localStorage.removeItem(k); } catch { /* ignore */ } };
 
-const getDeviceId = () => {
-    let id = lsGet(DEVICE_KEY);
-    if (!id) {
-        id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
-        lsSet(DEVICE_KEY, id);
-    }
-    return id;
+const readTickets = (): HcampTicket[] => {
+    try {
+        const list: HcampTicket[] = JSON.parse(lsGet(TICKETS_KEY) || '[]');
+        const old = lsGet(OLD_TICKET_KEY);
+        if (old) { // migra o formato antigo
+            const t: HcampTicket = JSON.parse(old);
+            if (!list.some(x => x.code === t.code)) list.unshift(t);
+            lsDel(OLD_TICKET_KEY);
+            lsSet(TICKETS_KEY, JSON.stringify(list));
+        }
+        return list;
+    } catch { return []; }
 };
+const writeTickets = (list: HcampTicket[]) => lsSet(TICKETS_KEY, JSON.stringify(list));
+
+// Nome completo: pelo menos 2 palavras de 2+ letras, só letras (com acento), hífen ou apóstrofo.
+const NAME_WORD = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’-]*$/;
+export const isFullName = (n: string) => {
+    const words = n.trim().split(/\s+/).filter(Boolean);
+    return words.every(w => NAME_WORD.test(w)) && words.filter(w => w.length >= 2).length >= 2;
+};
+export const FULL_NAME_ERROR = 'Digite seu nome completo (nome e sobrenome), só com letras.';
 
 const errorFrom = async (res: Response, fallback: string) => {
     try { const b = await res.json(); return b?.error || fallback; } catch { return fallback; }
@@ -115,45 +127,48 @@ const staffHeaders = (): Record<string, string> => {
 export const hcampService = {
     isMock: USE_MOCK,
 
-    /** Ticket já sorteado neste celular (a cor é fixa). */
-    getMyTicket(): HcampTicket | null {
-        try { const raw = lsGet(TICKET_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+    /** Tickets sorteados neste celular (mais recente primeiro). */
+    getMyTickets(): HcampTicket[] { return readTickets(); },
+
+    getMyTicket(code?: string): HcampTicket | null {
+        const list = readTickets();
+        return (code ? list.find(t => t.code === code) : list[0]) ?? null;
     },
 
     /**
-     * Confere no backend se o ticket deste celular ainda existe.
-     * Se o staff zerou o sorteio, apaga o ticket local e devolve null.
-     * Sem internet, mantém o ticket local.
+     * Atualiza os tickets deste celular com o backend: remove os que o staff apagou
+     * (sorteio zerado) e preenche o time quando já tiver sido revelado. Sem internet, mantém.
      */
-    async syncMyTicket(): Promise<HcampTicket | null> {
-        const local = this.getMyTicket();
-        if (!local) return null;
-        if (USE_MOCK) {
-            const full = readMockDb().find(p => p.code === local.code);
-            if (!full) { lsDel(TICKET_KEY); return null; }
-            const t = Date.now() >= mockRevealAt().getTime() ? full : seal(full);
-            lsSet(TICKET_KEY, JSON.stringify(t));
-            return t;
-        }
+    async syncMyTickets(): Promise<HcampTicket[]> {
+        const local = readTickets();
+        if (!local.length) return local;
         try {
-            const res = await fetch(`${API_URL}/hcamp/me?deviceId=${encodeURIComponent(getDeviceId())}`);
-            if (res.status === 404) { lsDel(TICKET_KEY); return null; }
-            if (!res.ok) return local;
-            const ticket: HcampTicket = await res.json();
-            lsSet(TICKET_KEY, JSON.stringify(ticket));
-            return ticket;
+            let fresh: HcampTicket[];
+            if (USE_MOCK) {
+                const revealed = Date.now() >= mockRevealAt().getTime();
+                fresh = readMockDb().filter(p => local.some(l => l.code === p.code)).map(p => revealed ? p : seal(p));
+            } else {
+                const res = await fetch(`${API_URL}/hcamp/tickets?codes=${encodeURIComponent(local.map(t => t.code).join(','))}`, { cache: 'no-store' });
+                if (!res.ok) return local;
+                fresh = await res.json();
+            }
+            const list = local.map(l => fresh.find(f => f.code === l.code)).filter((t): t is HcampTicket => !!t);
+            writeTickets(list);
+            return list;
         } catch { return local; }
     },
 
+    /** Sorteia uma pessoa. 1 ticket por nome completo — nome repetido dá erro. */
     async draw(name: string): Promise<HcampTicket> {
-        const existing = this.getMyTicket();
-        if (existing) return existing; // não deixa sortear de novo
-
         const cleanName = name.trim().replace(/\s+/g, ' ');
+        if (!isFullName(cleanName)) throw new Error(FULL_NAME_ERROR);
         let ticket: HcampTicket;
 
         if (USE_MOCK) {
             const db = readMockDb();
+            if (db.some(p => normalizeName(p.name) === normalizeName(cleanName))) {
+                throw new Error('Esse nome já tem um ticket. Cada pessoa só pode ser sorteada uma vez.');
+            }
             const counts = countTeams(db);
             const team = pickBalancedTeam(counts);
             const full: HcampTicket = { code: genCode(), name: cleanName, team, teamNumber: counts[team] + 1, createdAt: new Date().toISOString(), revealed: true };
@@ -163,13 +178,13 @@ export const hcampService = {
             const res = await fetch(`${API_URL}/hcamp/draw`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: cleanName, deviceId: getDeviceId() }),
+                body: JSON.stringify({ name: cleanName }),
             });
             if (!res.ok) throw new Error(await errorFrom(res, 'Não foi possível sortear agora. Tente novamente.'));
             ticket = await res.json();
         }
 
-        lsSet(TICKET_KEY, JSON.stringify(ticket));
+        writeTickets([ticket, ...readTickets().filter(t => t.code !== ticket.code)]);
         return ticket;
     },
 
@@ -216,9 +231,9 @@ export const hcampService = {
             }
             ticket = await res.json();
         }
-        // Se for o ticket deste celular, guarda já revelado
-        const mine = this.getMyTicket();
-        if (mine && mine.code === ticket.code) lsSet(TICKET_KEY, JSON.stringify(ticket));
+        // Se for um ticket deste celular, guarda já revelado
+        const mine = readTickets();
+        if (mine.some(t => t.code === ticket.code)) writeTickets(mine.map(t => t.code === ticket.code ? ticket : t));
         return ticket;
     },
 
@@ -259,7 +274,7 @@ export const hcampService = {
     },
 
     async reset(): Promise<void> {
-        if (USE_MOCK) { lsSet(MOCK_DB_KEY, '[]'); lsDel(TICKET_KEY); return; }
+        if (USE_MOCK) { lsSet(MOCK_DB_KEY, '[]'); lsDel(TICKETS_KEY); return; }
         const res = await fetch(`${API_URL}/hcamp/stats`, { method: 'DELETE', headers: staffHeaders() });
         if (res.status === 401) { this.staffLogout(); throw new HcampAuthError(await errorFrom(res, 'Faça login novamente.')); }
         if (!res.ok) throw new Error(await errorFrom(res, 'Erro ao zerar o sorteio.'));

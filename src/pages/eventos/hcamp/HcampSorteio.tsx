@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Shuffle, Lock } from 'lucide-react';
 import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, Tape, HcampShell, BackLink } from './hcampTheme';
-import { hcampService, TEAM_IDS } from '../../../services/hcampService';
+import { hcampService, TEAM_IDS, isFullName, FULL_NAME_ERROR } from '../../../services/hcampService';
 import { useHcampReveal, formatRevealAt } from './useHcampReveal';
 import type { TeamId } from '../../../services/hcampService';
 
@@ -23,16 +23,10 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
 
     useEffect(() => () => { if (rollRef.current) clearInterval(rollRef.current); }, []);
 
-    // Cor já sorteada neste celular → vai direto para o ticket
-    if (phase === 'form' && hcampService.getMyTicket()) return <Navigate to="/hcamp/ticket" replace />;
-
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const clean = name.trim().replace(/\s+/g, ' ');
-        if (clean.split(' ').length < 2 || clean.length < 5) {
-            setError('Digite seu nome e sobrenome.');
-            return;
-        }
+        if (!isFullName(clean)) { setError(FULL_NAME_ERROR); return; }
         setError('');
         setPhase('rolling');
 
@@ -50,7 +44,7 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
             if (rollRef.current) clearInterval(rollRef.current);
             if (ticket.team) setShown(ticket.team); else setSealed(true); // time lacrado até a revelação
             setPhase('done');
-            setTimeout(() => navigate('/hcamp/ticket', { replace: true }), ticket.team ? 1400 : 2600);
+            setTimeout(() => navigate(`/hcamp/ticket?code=${encodeURIComponent(ticket.code)}`, { replace: true }), ticket.team ? 1400 : 2600);
         } catch (err) {
             if (rollRef.current) clearInterval(rollRef.current);
             setPhase('form');
@@ -71,13 +65,13 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                         <div className="mb-8"><Tape>Gincana HCAMP</Tape></div>
                         <h1 className="text-5xl sm:text-6xl leading-tight" style={{ fontFamily: FONTS.fat }}>Qual é o seu time?</h1>
                         <p className="mt-4 text-lg opacity-80" style={{ fontFamily: FONTS.type }}>
-                            Digite seu nome e toque em sortear. Seu time fica lacrado e só é revelado quando a contagem acabar!
+                            Digite o nome completo e toque em sortear. Cada pessoa só pode ser sorteada uma vez, e o time fica lacrado até a revelação!
                         </p>
 
                         <form onSubmit={handleSubmit} className="mt-10 w-full flex flex-col gap-6">
                             <Scrap bg={inputBg} rot={-1} torn={1} hover={false}>
                                 <label className="block text-left px-5 pt-4 text-xs tracking-[0.2em]" style={{ color: C.forest, fontFamily: FONTS.type }} htmlFor="hc-name">
-                                    NOME E SOBRENOME
+                                    NOME COMPLETO
                                 </label>
                                 <input
                                     id="hc-name"
@@ -86,7 +80,7 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                                     autoComplete="name"
                                     autoFocus
                                     maxLength={60}
-                                    placeholder="Ex.: Maria Souza"
+                                    placeholder="Ex.: Maria Souza Lima"
                                     className="w-full bg-transparent px-5 pb-4 pt-1 text-2xl outline-none placeholder:opacity-40"
                                     style={{ color: C.ink, fontFamily: FONTS.slab }}
                                 />

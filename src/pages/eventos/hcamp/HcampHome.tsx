@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shuffle, Ticket, UserCheck, ArrowRight, Sparkles, Lock } from 'lucide-react';
+import { Shuffle, Ticket, UserCheck, ArrowRight, Sparkles, Lock, UserPlus } from 'lucide-react';
 import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, HcampTitle, Tape, HcampShell } from './hcampTheme';
 import { hcampService, TEAM_IDS } from '../../../services/hcampService';
 import { useHcampReveal, formatRevealAt } from './useHcampReveal';
@@ -26,10 +26,9 @@ const COUNT_TILES = [
 
 export const HcampHome = ({ isLightMode }: HcampProps) => {
     const { timeLeft, revealed, revealAt } = useHcampReveal();
-    const [myTicket, setMyTicket] = useState(() => hcampService.getMyTicket());
-    useEffect(() => { hcampService.syncMyTicket().then(setMyTicket); }, [revealed]);
-
-    const myTeam = myTicket?.team ? TEAMS[myTicket.team] : null;
+    const [myTickets, setMyTickets] = useState(() => hcampService.getMyTickets());
+    useEffect(() => { hcampService.syncMyTickets().then(setMyTickets); }, [revealed]);
+    const hasTickets = myTickets.length > 0;
 
     return (
         <HcampShell isLightMode={isLightMode}>
@@ -63,23 +62,13 @@ export const HcampHome = ({ isLightMode }: HcampProps) => {
 
                 {/* AÇÕES: 1. sortear/ver ticket · 2. revelar (libera no fim da contagem) · 3. staff */}
                 <div className="mt-14 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-5 w-full max-w-4xl">
-                    {myTicket ? (
-                        <Link to="/hcamp/ticket" className="w-full sm:w-auto sm:min-w-[260px]">
-                            <Scrap bg={myTeam ? myTeam.color : '#3A3430'} rot={-1.5} torn={0}>
-                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: myTeam ? myTeam.text : C.cream, fontFamily: FONTS.slab }}>
-                                    <Ticket size={22} /> Ver meu ticket <ArrowRight size={20} />
-                                </div>
-                            </Scrap>
-                        </Link>
-                    ) : (
-                        <Link to="/hcamp/sorteio" className="w-full sm:w-auto sm:min-w-[260px]">
-                            <Scrap bg={C.red} rot={-1.5} torn={0}>
-                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: C.cream, fontFamily: FONTS.slab }}>
-                                    <Shuffle size={22} /> Sortear meu time <ArrowRight size={20} />
-                                </div>
-                            </Scrap>
-                        </Link>
-                    )}
+                    <Link to="/hcamp/sorteio" className="w-full sm:w-auto sm:min-w-[260px]">
+                        <Scrap bg={C.red} rot={-1.5} torn={0}>
+                            <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: C.cream, fontFamily: FONTS.slab }}>
+                                {hasTickets ? <><UserPlus size={22} /> Sortear outra pessoa</> : <><Shuffle size={22} /> Sortear meu time <ArrowRight size={20} /></>}
+                            </div>
+                        </Scrap>
+                    </Link>
                     {revealed ? (
                         <Link to="/hcamp/revelar" className="w-full sm:w-auto sm:min-w-[260px]">
                             <Scrap bg={C.orange} rot={1} torn={1}>
@@ -109,6 +98,13 @@ export const HcampHome = ({ isLightMode }: HcampProps) => {
                         </Scrap>
                     </Link>
                 </div>
+
+                {hasTickets && (
+                    <Link to="/hcamp/ticket" className="mt-8 inline-flex items-center gap-2 px-5 py-3 rounded-full border text-sm opacity-90 hover:opacity-100"
+                        style={{ borderColor: 'currentColor', fontFamily: FONTS.type }}>
+                        <Ticket size={16} /> {myTickets.length === 1 ? 'Ver meu ticket' : `Meus tickets (${myTickets.length})`}
+                    </Link>
+                )}
 
                 {/* OS TIMES */}
                 <section className="mt-20 w-full max-w-4xl">
