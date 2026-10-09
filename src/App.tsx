@@ -26,6 +26,7 @@ import { HcampSorteio } from './pages/eventos/hcamp/HcampSorteio';
 import { HcampTicket } from './pages/eventos/hcamp/HcampTicket';
 import { HcampQrCode } from './pages/eventos/hcamp/HcampQrCode';
 import { HcampStaff } from './pages/eventos/hcamp/HcampStaff';
+import { HcampRevelar } from './pages/eventos/hcamp/HcampRevelar';
 
 const MainContent = () => {
   const location = useLocation();
@@ -125,6 +126,7 @@ const MainContent = () => {
           <Route path="/hcamp/ticket" element={<HcampTicket isLightMode={isLightMode} />} />
           <Route path="/hcamp/qrcode" element={<HcampQrCode isLightMode={isLightMode} />} />
           <Route path="/hcamp/staff" element={<HcampStaff isLightMode={isLightMode} />} />
+          <Route path="/hcamp/revelar" element={<HcampRevelar isLightMode={isLightMode} />} />
 
         </Routes>
       </main>

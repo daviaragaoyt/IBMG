@@ -1,75 +1,42 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import QRCode from 'react-qr-code';
-import { HCAMP_COLORS as C, FONTS, TEAMS, NOISE, HcampShell, BackLink } from './hcampTheme';
+import { Link, Navigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
+import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, HcampShell, BackLink } from './hcampTheme';
+import { HcampTicketCard } from './HcampTicketCard';
+import { useHcampReveal } from './useHcampReveal';
 import { hcampService } from '../../../services/hcampService';
 
 interface Props { isLightMode: boolean; }
 
-const Field = ({ label, value, big = false }: { label: string; value: string; big?: boolean }) => (
-    <div className="text-left">
-        <div className="text-[10px] tracking-[0.25em] opacity-60" style={{ fontFamily: FONTS.type }}>{label}</div>
-        <div className={big ? 'text-2xl leading-tight' : 'text-lg leading-tight'} style={{ fontFamily: FONTS.slab }}>{value}</div>
-    </div>
-);
-
 export const HcampTicket = ({ isLightMode }: Props) => {
     const [ticket, setTicket] = useState(() => hcampService.getMyTicket());
+    const { revealAt, revealed } = useHcampReveal();
 
-    // Confere no backend se o ticket ainda vale (o staff pode ter zerado o sorteio)
-    useEffect(() => { hcampService.syncMyTicket().then(setTicket); }, []);
+    // Confere no backend se o ticket ainda vale (e busca o time quando já tiver sido revelado)
+    useEffect(() => { hcampService.syncMyTicket().then(setTicket); }, [revealed]);
 
     if (!ticket) return <Navigate to="/hcamp/sorteio" replace />;
 
-    const team = TEAMS[ticket.team];
-    const date = new Date(ticket.createdAt);
-    const dateStr = date.toLocaleDateString('pt-BR') + ' · ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const team = ticket.team ? TEAMS[ticket.team] : null;
+    const pageBg = team ? team.dark : isLightMode ? '#CFC8BE' : C.deep;
 
     return (
-        <HcampShell isLightMode={isLightMode} tint={team.dark}>
+        <HcampShell isLightMode={isLightMode} tint={team?.dark} decor={false}>
             <div className="w-full max-w-sm flex flex-col items-center">
                 <BackLink label="Início" />
 
-                <div className="hc-pop w-full relative" style={{ filter: 'drop-shadow(0 18px 30px rgba(0,0,0,0.45))', transform: 'rotate(-1.5deg)' }}>
-                    {/* TOPO — cor do time */}
-                    <div className="relative rounded-t-3xl px-7 pt-7 pb-9 overflow-hidden" style={{ background: team.color, backgroundImage: NOISE, backgroundBlendMode: 'multiply', color: team.text }}>
-                        <div className="flex justify-between items-start text-[11px] tracking-[0.25em]" style={{ fontFamily: FONTS.type }}>
-                            <span>HCAMP 2026</span>
-                            <span>GINCANA</span>
-                        </div>
-                        <div className="mt-8 text-sm tracking-[0.3em] opacity-85" style={{ fontFamily: FONTS.type }}>TIME</div>
-                        <div className="leading-none mt-1 whitespace-nowrap" style={{ fontFamily: FONTS.slab, fontSize: 'clamp(2.6rem, 13vw, 3.6rem)' }}>{team.name}</div>
-                        <div className="absolute -right-4 -bottom-8 text-[150px] leading-none opacity-15 select-none" style={{ fontFamily: FONTS.chunky }} aria-hidden>
-                            #{ticket.teamNumber}
-                        </div>
-                    </div>
+                <HcampTicketCard ticket={ticket} revealAt={revealAt} notchColor={pageBg} />
 
-                    {/* PERFURAÇÃO */}
-                    <div className="relative h-0">
-                        <div className="absolute left-5 right-5 top-0 border-t-2 border-dashed" style={{ borderColor: team.color }} />
-                        <div className="absolute -left-4 -top-4 w-8 h-8 rounded-full" style={{ background: team.dark }} />
-                        <div className="absolute -right-4 -top-4 w-8 h-8 rounded-full" style={{ background: team.dark }} />
-                    </div>
-
-                    {/* CORPO — dados do participante */}
-                    <div className="rounded-b-3xl px-7 pt-8 pb-7" style={{ background: C.cream, backgroundImage: NOISE, backgroundBlendMode: 'multiply', color: C.ink }}>
-                        <Field label="PARTICIPANTE" value={ticket.name} big />
-                        <div className="mt-5 grid grid-cols-2 gap-4">
-                            <Field label="Nº NO TIME" value={`#${String(ticket.teamNumber).padStart(2, '0')}`} />
-                            <Field label="CÓDIGO" value={ticket.code} />
-                        </div>
-                        <div className="mt-5"><Field label="SORTEADO EM" value={dateStr} /></div>
-
-                        <div className="mt-7 flex items-center gap-5">
-                            <div className="p-2 rounded-lg" style={{ background: '#fff' }}>
-                                <QRCode value={ticket.code} size={92} fgColor={C.ink} bgColor="#ffffff" />
+                {/* Revelação liberada, mas este ticket ainda está lacrado -> atalho */}
+                {!team && revealed && (
+                    <Link to="/hcamp/revelar" className="mt-10 w-full">
+                        <Scrap bg={C.orange} rot={-1} torn={1}>
+                            <div className="flex items-center justify-center gap-3 px-6 py-5 text-xl" style={{ color: C.cream, fontFamily: FONTS.slab }}>
+                                <Sparkles size={20} /> Revelar meu time
                             </div>
-                            <p className="text-xs leading-relaxed opacity-70" style={{ fontFamily: FONTS.type }}>
-                                Mostre este ticket para o staff da gincana. Dica: tire um print da tela!
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                        </Scrap>
+                    </Link>
+                )}
             </div>
         </HcampShell>
     );

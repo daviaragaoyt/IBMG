@@ -1,10 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, RotateCcw, Search, Lock, RefreshCw, LogOut } from 'lucide-react';
+import { QrCode, RotateCcw, Search, Lock, RefreshCw, LogOut, Sparkles, CalendarClock, Unlock } from 'lucide-react';
 import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, Tape, HcampShell, BackLink } from './hcampTheme';
 import { hcampService, HcampAuthError, TEAM_IDS } from '../../../services/hcampService';
 import type { HcampStats, HcampStaffUser, TeamId } from '../../../services/hcampService';
+import { useHcampReveal, formatRevealAt } from './useHcampReveal';
+
+/** Date -> valor do <input type="datetime-local"> no fuso do aparelho */
+const toLocalInput = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
 interface Props { isLightMode: boolean; }
 
@@ -22,6 +29,13 @@ export const HcampStaff = ({ isLightMode }: Props) => {
     const [loadError, setLoadError] = useState('');
     const [query, setQuery] = useState('');
     const [confirmReset, setConfirmReset] = useState(false);
+
+    // Revelação dos times
+    const reveal = useHcampReveal();
+    const [revealInput, setRevealInput] = useState('');
+    const [revealMsg, setRevealMsg] = useState('');
+    const [confirmNow, setConfirmNow] = useState(false);
+    useEffect(() => { if (reveal.revealAt && !revealInput) setRevealInput(toLocalInput(reveal.revealAt)); }, [reveal.revealAt, revealInput]);
 
     const load = useCallback(async () => {
         try { setStats(await hcampService.getStats()); setLoadError(''); }
@@ -48,6 +62,30 @@ export const HcampStaff = ({ isLightMode }: Props) => {
     };
 
     const handleLogout = () => { hcampService.staffLogout(); setStaff(null); setStats(null); };
+
+    const saveRevealAt = async (d: Date) => {
+        setRevealMsg('');
+        try {
+            const cfg = await hcampService.setRevealAt(d);
+            reveal.apply(cfg);
+            setRevealInput(toLocalInput(new Date(cfg.revealAt)));
+            setRevealMsg('Data salva!');
+        } catch (e) {
+            if (e instanceof HcampAuthError) { setStaff(null); setLoginError(e.message); return; }
+            setRevealMsg(e instanceof Error ? e.message : 'Erro ao salvar.');
+        }
+    };
+    const handleSaveReveal = (e: FormEvent) => {
+        e.preventDefault();
+        const d = new Date(revealInput);
+        if (isNaN(d.getTime())) { setRevealMsg('Data inválida.'); return; }
+        saveRevealAt(d);
+    };
+    const handleRevealNow = () => {
+        if (!confirmNow) { setConfirmNow(true); setTimeout(() => setConfirmNow(false), 4000); return; }
+        setConfirmNow(false);
+        saveRevealAt(new Date());
+    };
 
     const handleReset = async () => {
         if (!confirmReset) { setConfirmReset(true); setTimeout(() => setConfirmReset(false), 4000); return; }
@@ -100,7 +138,7 @@ export const HcampStaff = ({ isLightMode }: Props) => {
     const q = query.trim().toLowerCase();
     const byTeam = (t: TeamId) => (stats?.participants ?? [])
         .filter(p => p.team === t && (!q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)))
-        .sort((a, b) => a.teamNumber - b.teamNumber);
+        .sort((a, b) => (a.teamNumber ?? 0) - (b.teamNumber ?? 0));
 
     return (
         <HcampShell isLightMode={isLightMode} decor={false}>
@@ -136,6 +174,35 @@ export const HcampStaff = ({ isLightMode }: Props) => {
                         Modo de teste (VITE_HCAMP_MOCK=true): os sorteios ficam salvos só neste navegador.
                     </div>
                 )}
+
+                {/* REVELAÇÃO DOS TIMES */}
+                <div className="mb-10 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center gap-5"
+                    style={{ background: isLightMode ? '#fff' : 'rgba(255,255,255,0.05)', border: `1px solid ${isLightMode ? '#e5ddd2' : 'rgba(255,255,255,0.08)'}` }}>
+                    <div className="flex items-center gap-3 lg:w-72">
+                        <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: reveal.revealed ? C.orange : '#3A3430', color: C.cream }}>
+                            {reveal.revealed ? <Sparkles size={20} /> : <Lock size={20} />}
+                        </div>
+                        <div>
+                            <div className="text-lg" style={{ fontFamily: FONTS.slab }}>{reveal.revealed ? 'Times revelados' : 'Times lacrados'}</div>
+                            <div className="text-xs" style={{ color: muted, fontFamily: FONTS.type }}>
+                                {reveal.revealed ? `Liberado desde ${formatRevealAt(reveal.revealAt)}` : `Revelação em ${formatRevealAt(reveal.revealAt)}`}
+                            </div>
+                        </div>
+                    </div>
+                    <form onSubmit={handleSaveReveal} className="flex flex-wrap items-center gap-3 flex-1">
+                        <label className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm" style={{ background: isLightMode ? '#f3eee7' : 'rgba(255,255,255,0.08)' }}>
+                            <CalendarClock size={16} className="opacity-60" />
+                            <input type="datetime-local" value={revealInput} onChange={e => setRevealInput(e.target.value)} aria-label="Data e hora da revelação"
+                                className="bg-transparent outline-none" style={{ colorScheme: isLightMode ? 'light' : 'dark' }} />
+                        </label>
+                        <button type="submit" className="px-5 py-2.5 rounded-full text-sm font-bold" style={{ background: C.cream, color: C.forest }}>Salvar data</button>
+                        <button type="button" onClick={handleRevealNow} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-colors"
+                            style={{ background: confirmNow ? C.orange : 'transparent', color: confirmNow ? C.cream : C.orange, border: `2px solid ${C.orange}` }}>
+                            <Unlock size={16} /> {confirmNow ? 'Toque de novo para liberar' : 'Liberar agora'}
+                        </button>
+                        {revealMsg && <span className="text-sm" style={{ fontFamily: FONTS.type, color: muted }}>{revealMsg}</span>}
+                    </form>
+                </div>
 
                 {/* PLACAR */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">

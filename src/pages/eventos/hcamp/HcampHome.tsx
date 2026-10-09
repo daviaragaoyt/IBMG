@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shuffle, Ticket, UserCheck, ArrowRight } from 'lucide-react';
+import { Shuffle, Ticket, UserCheck, ArrowRight, Sparkles, Lock } from 'lucide-react';
 import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, HcampTitle, Tape, HcampShell } from './hcampTheme';
 import { hcampService, TEAM_IDS } from '../../../services/hcampService';
+import { useHcampReveal, formatRevealAt } from './useHcampReveal';
 
 interface HcampProps { isLightMode: boolean; }
 
 // =====================================================================
-// CONFIGURAÇÃO DO EVENTO — edite aqui textos e data
+// CONFIGURAÇÃO DO EVENTO — textos
+// (a data da revelação/contador é definida pelo staff no painel /hcamp/staff)
 // =====================================================================
 export const HCAMP_CONFIG = {
-    // TODO: confirmar data/hora oficial do HCAMP (usada no contador)
-    date: '2026-11-14T08:00:00',
     label: 'Acampamento IBMG · 2026',
-    tagline: 'Descubra o seu time da gincana!',
+    tagline: 'Sorteie agora, descubra seu time na revelação!',
+    taglineRevealed: 'Os times foram revelados!',
 };
 
 const COUNT_TILES = [
@@ -24,27 +25,11 @@ const COUNT_TILES = [
 ] as const;
 
 export const HcampHome = ({ isLightMode }: HcampProps) => {
-    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const { timeLeft, revealed, revealAt } = useHcampReveal();
     const [myTicket, setMyTicket] = useState(() => hcampService.getMyTicket());
-    useEffect(() => { hcampService.syncMyTicket().then(setMyTicket); }, []);
+    useEffect(() => { hcampService.syncMyTicket().then(setMyTicket); }, [revealed]);
 
-    useEffect(() => {
-        const target = new Date(HCAMP_CONFIG.date).getTime();
-        const tick = () => {
-            const diff = Math.max(0, target - Date.now());
-            setTimeLeft({
-                days: Math.floor(diff / 86400000),
-                hours: Math.floor((diff % 86400000) / 3600000),
-                minutes: Math.floor((diff % 3600000) / 60000),
-                seconds: Math.floor((diff % 60000) / 1000),
-            });
-        };
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, []);
-
-    const myTeam = myTicket ? TEAMS[myTicket.team] : null;
+    const myTeam = myTicket?.team ? TEAMS[myTicket.team] : null;
 
     return (
         <HcampShell isLightMode={isLightMode}>
@@ -54,11 +39,14 @@ export const HcampHome = ({ isLightMode }: HcampProps) => {
                 <HcampTitle />
 
                 <p className="mt-10 text-2xl md:text-3xl max-w-xl" style={{ fontFamily: FONTS.marker, color: isLightMode ? C.red : C.peach }}>
-                    {HCAMP_CONFIG.tagline}
+                    {revealed ? HCAMP_CONFIG.taglineRevealed : HCAMP_CONFIG.tagline}
                 </p>
 
-                {/* CONTADOR */}
-                <div className="mt-10 grid grid-cols-4 gap-2 sm:gap-5 w-full max-w-xl">
+                {/* CONTADOR — até a revelação dos times */}
+                <p className="mt-8 text-xs tracking-[0.25em] opacity-70" style={{ fontFamily: FONTS.type }}>
+                    {revealed ? 'TIMES REVELADOS' : `REVELAÇÃO DOS TIMES · ${formatRevealAt(revealAt).toUpperCase()}`}
+                </p>
+                <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-5 w-full max-w-xl">
                     {COUNT_TILES.map((t, i) => (
                         <Scrap key={t.key} bg={t.bg} rot={t.rot} torn={i + 1}>
                             <div className="py-3 sm:py-5 flex flex-col items-center">
@@ -73,24 +61,45 @@ export const HcampHome = ({ isLightMode }: HcampProps) => {
                     ))}
                 </div>
 
-                {/* AÇÃO PRINCIPAL */}
-                <div className="mt-14 flex flex-col sm:flex-row justify-center items-center gap-5 w-full max-w-2xl">
-                    {myTicket && myTeam ? (
-                        <Link to="/hcamp/ticket" className="w-full sm:w-auto sm:min-w-[300px]">
-                            <Scrap bg={myTeam.color} rot={-1.5} torn={0}>
-                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: myTeam.text, fontFamily: FONTS.slab }}>
+                {/* AÇÕES: 1. sortear/ver ticket · 2. revelar (libera no fim da contagem) · 3. staff */}
+                <div className="mt-14 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-5 w-full max-w-4xl">
+                    {myTicket ? (
+                        <Link to="/hcamp/ticket" className="w-full sm:w-auto sm:min-w-[260px]">
+                            <Scrap bg={myTeam ? myTeam.color : '#3A3430'} rot={-1.5} torn={0}>
+                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: myTeam ? myTeam.text : C.cream, fontFamily: FONTS.slab }}>
                                     <Ticket size={22} /> Ver meu ticket <ArrowRight size={20} />
                                 </div>
                             </Scrap>
                         </Link>
                     ) : (
-                        <Link to="/hcamp/sorteio" className="w-full sm:w-auto sm:min-w-[300px]">
+                        <Link to="/hcamp/sorteio" className="w-full sm:w-auto sm:min-w-[260px]">
                             <Scrap bg={C.red} rot={-1.5} torn={0}>
                                 <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: C.cream, fontFamily: FONTS.slab }}>
                                     <Shuffle size={22} /> Sortear meu time <ArrowRight size={20} />
                                 </div>
                             </Scrap>
                         </Link>
+                    )}
+                    {revealed ? (
+                        <Link to="/hcamp/revelar" className="w-full sm:w-auto sm:min-w-[260px]">
+                            <Scrap bg={C.orange} rot={1} torn={1}>
+                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl" style={{ color: C.cream, fontFamily: FONTS.slab }}>
+                                    <Sparkles size={22} /> Revelar meu time
+                                </div>
+                            </Scrap>
+                        </Link>
+                    ) : (
+                        <div className="relative w-full sm:w-auto sm:min-w-[260px] cursor-not-allowed" aria-disabled title="Libera quando a contagem acabar">
+                            <Scrap bg={isLightMode ? '#B7AEA3' : '#3A3A35'} rot={1} torn={1} hover={false}>
+                                <div className="flex items-center justify-center gap-3 px-8 py-6 text-xl opacity-70" style={{ color: C.cream, fontFamily: FONTS.slab }}>
+                                    <Lock size={20} /> Revelar meu time
+                                </div>
+                            </Scrap>
+                            <span className="absolute -top-3 -right-2 rotate-[8deg] text-[10px] px-2 py-0.5 border-2 pointer-events-none shadow-sm"
+                                style={{ borderColor: C.pink, color: C.pink, fontFamily: FONTS.type, background: C.cream }}>
+                                LIBERA EM {formatRevealAt(revealAt).toUpperCase()}
+                            </span>
+                        </div>
                     )}
                     <Link to="/hcamp/staff" className="w-full sm:w-auto sm:min-w-[200px]">
                         <Scrap bg={C.limeLight} rot={1} torn={2}>
@@ -118,7 +127,7 @@ export const HcampHome = ({ isLightMode }: HcampProps) => {
                         })}
                     </div>
                     <p className="mt-8 text-sm opacity-70 max-w-md mx-auto" style={{ fontFamily: FONTS.type }}>
-                        O sorteio é equilibrado: cada pessoa vai para o time que tem menos participantes no momento.
+                        O sorteio é equilibrado: cada pessoa vai para o time que tem menos participantes. Seu time fica lacrado até a revelação!
                     </p>
                 </section>
             </div>

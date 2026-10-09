@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Shuffle } from 'lucide-react';
+import { Shuffle, Lock } from 'lucide-react';
 import { HCAMP_COLORS as C, FONTS, TEAMS, Scrap, Tape, HcampShell, BackLink } from './hcampTheme';
 import { hcampService, TEAM_IDS } from '../../../services/hcampService';
+import { useHcampReveal, formatRevealAt } from './useHcampReveal';
 import type { TeamId } from '../../../services/hcampService';
 
 interface Props { isLightMode: boolean; }
@@ -16,6 +17,8 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
     const [error, setError] = useState('');
     const [phase, setPhase] = useState<'form' | 'rolling' | 'done'>('form');
     const [shown, setShown] = useState<TeamId>('VERMELHO');
+    const [sealed, setSealed] = useState(false);
+    const { revealAt } = useHcampReveal();
     const rollRef = useRef<number | null>(null);
 
     useEffect(() => () => { if (rollRef.current) clearInterval(rollRef.current); }, []);
@@ -45,9 +48,9 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                 new Promise(r => setTimeout(r, MIN_ROLL_MS)),
             ]);
             if (rollRef.current) clearInterval(rollRef.current);
-            setShown(ticket.team);
+            if (ticket.team) setShown(ticket.team); else setSealed(true); // time lacrado até a revelação
             setPhase('done');
-            setTimeout(() => navigate('/hcamp/ticket', { replace: true }), 1400);
+            setTimeout(() => navigate('/hcamp/ticket', { replace: true }), ticket.team ? 1400 : 2600);
         } catch (err) {
             if (rollRef.current) clearInterval(rollRef.current);
             setPhase('form');
@@ -59,7 +62,7 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
     const inputBg = isLightMode ? '#FFFFFF' : 'rgba(239,230,218,0.95)';
 
     return (
-        <HcampShell isLightMode={isLightMode} tint={phase === 'form' ? undefined : team.dark} animateBg={phase !== 'rolling'}>
+        <HcampShell isLightMode={isLightMode} tint={phase === 'form' ? undefined : sealed ? '#201C19' : team.dark} animateBg={phase !== 'rolling'}>
             <div className="w-full max-w-lg flex flex-col items-center text-center">
                 {phase === 'form' && <BackLink />}
 
@@ -68,7 +71,7 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                         <div className="mb-8"><Tape>Gincana HCAMP</Tape></div>
                         <h1 className="text-5xl sm:text-6xl leading-tight" style={{ fontFamily: FONTS.fat }}>Qual é o seu time?</h1>
                         <p className="mt-4 text-lg opacity-80" style={{ fontFamily: FONTS.type }}>
-                            Digite seu nome e toque em sortear. A cor que cair é a sua até o fim do acampamento!
+                            Digite seu nome e toque em sortear. Seu time fica lacrado e só é revelado quando a contagem acabar!
                         </p>
 
                         <form onSubmit={handleSubmit} className="mt-10 w-full flex flex-col gap-6">
@@ -105,8 +108,21 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                 ) : (
                     <div className="flex flex-col items-center pt-10" aria-live="polite">
                         <p className="text-xl mb-8" style={{ fontFamily: FONTS.marker, color: C.cream }}>
-                            {phase === 'rolling' ? 'Sorteando...' : 'Seu time é...'}
+                            {phase === 'rolling' ? 'Sorteando...' : sealed ? 'Sorteado! Seu time é segredo...' : 'Seu time é...'}
                         </p>
+                        {sealed ? (
+                            <div className="hc-pop">
+                                <Scrap bg="#3A3430" rot={-3} torn={2} hover={false}>
+                                    <div className="w-[260px] sm:w-[320px] py-14 flex flex-col items-center" style={{ color: C.cream }}>
+                                        <Lock size={34} />
+                                        <span className="text-6xl mt-3" style={{ fontFamily: FONTS.slab }}>???</span>
+                                        <span className="mt-3 text-xs tracking-[0.2em] opacity-80 px-4" style={{ fontFamily: FONTS.type }}>
+                                            REVELAÇÃO EM {formatRevealAt(revealAt).toUpperCase()}
+                                        </span>
+                                    </div>
+                                </Scrap>
+                            </div>
+                        ) : (
                         <div key={phase} className={phase === 'done' ? 'hc-pop' : ''}>
                             <Scrap bg={team.color} rot={phase === 'done' ? -3 : 0} torn={2} hover={false}>
                                 <div className="w-[260px] sm:w-[320px] py-16 flex flex-col items-center" style={{ color: team.text }}>
@@ -115,6 +131,7 @@ export const HcampSorteio = ({ isLightMode }: Props) => {
                                 </div>
                             </Scrap>
                         </div>
+                        )}
                     </div>
                 )}
             </div>
